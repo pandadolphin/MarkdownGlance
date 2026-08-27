@@ -153,7 +153,8 @@ Acceptance criteria:
   duplicate.
 - One source buffer has at most one live preview session per window.
 - Closing a plugin-created preview group restores the prior layout only when the
-  user has not subsequently changed that layout.
+  user has not subsequently changed that layout, and restoration completes
+  within one UI callback after the close action.
 
 #### FR-002 — Toggle Full Screen Preview (P0)
 
@@ -419,10 +420,12 @@ documented or observable triggers:
 - `on_pre_close_window`.
 
 “Bounded reconciliation” means at most one zero-delay reconciliation callback is
-pending per window, no periodic timer is used, and stale state is removed within
-one UI callback after the next listed trigger. If mouse, keyboard, group, or
-window closure produces no usable trigger before stale state affects the next
-user action, Candidate A fails the close-detection gate.
+pending per window and no periodic timer is used. For the close-detection gate,
+the close action itself must produce a usable trigger: session cleanup and any
+plugin-owned layout restoration complete within one UI callback after that
+trigger, before another user action is required. The remaining triggers are
+safety nets, not permission for visibly delayed restoration. If mouse, keyboard,
+group, or window closure produces no such trigger, Candidate A fails the gate.
 
 #### Candidate B — scratch `View` with `PhantomSet`
 
@@ -462,7 +465,7 @@ both candidates. The decision table must include:
 | --- | --- |
 | Live update at mid-document scroll | No jump to document start; reading position remains usable |
 | TOC navigation | Preview moves to the selected heading |
-| User closes preview | Session and plugin-owned layout state are cleaned |
+| User closes preview | Session cleanup and eligible layout restoration finish within one UI callback after close, without another user action |
 | Side-by-Side / Full Screen switch | Focused-preview shortcut works; one session and one surface remain |
 
 #### Scroll-retention experiment protocol
@@ -476,8 +479,10 @@ repeatable black-box visual measurement:
    color scheme, 100% preview zoom, and hide the minimap and sidebar.
 3. Scroll until the marker's top edge is one third of the preview viewport from
    the top, then capture the baseline screenshot.
-4. Apply ten predefined edits in a paragraph after the anchor. Wait for each
-   presentation update to settle and capture another screenshot.
+4. Apply ten predefined edits in a paragraph after the anchor. For each edit,
+   observe the backend presentation-update call return, wait exactly 500 ms, and
+   capture another screenshot. “Settled” means this fixed 500 ms interval; the
+   tester must not substitute a subjective visual wait.
 5. Record Sublime build, OS scaling, backend commit, and the eleven screenshots
    in the ADR. Measure the marker's vertical pixel coordinate in each image.
 
@@ -816,7 +821,8 @@ Run only the four backend-selection gates:
 2. **TOC navigation:** navigate to top-, middle-, and bottom-document headings
    and verify that the preview, not only the source, reaches each target.
 3. **Close detection:** close by mouse, keyboard, group closure, and window
-   closure; exercise every proposed reconciliation trigger and verify cleanup.
+   closure; verify cleanup and eligible layout restoration within one UI callback
+   after each close action, without clicking or focusing another sheet.
 4. **Mode switch:** invoke the shortcut while the preview has focus, switch
    Side-by-Side to Full Screen and back, and verify that exactly one session and
    one preview surface remain.
