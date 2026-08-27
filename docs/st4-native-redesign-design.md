@@ -3,7 +3,7 @@
 ## 中文摘要
 
 - 本文是 [`st4-native-redesign-prd.md`](st4-native-redesign-prd.md) 的实现设计，覆盖 module 划分、核心接口、session 状态机、generation 调度、asset service、renderer 复用边界、backend 契约以及 Phase 0 prototype 的具体做法。产品需求与 gate 定义以 PRD 为准，本文不重复。
-- 全部 Sublime API 调用被限制在 `adapter/` 和 `presentation/` 两层；`application/`、`domain/`、`renderer/`、`assets/` 不 import `sublime`，可用 CPython 3.8 直接跑测试（见 [3. Module layout](#3-module-layout)、[4. Dependency rules](#4-dependency-rules)）。
+- 全部 Sublime API 调用被限制在 `adapter/` 和 `presentation/` 两层；`application/`、`domain/`、`renderer/`、`assets/` 不 import `sublime`，可用 CPython 3.14 直接跑测试（见 [3. Module layout](#3-module-layout)、[4. Dependency rules](#4-dependency-rules)）。
 - 并发模型：每个 session 一个单调递增的 `generation`；render 与 network 分别使用 bounded `ThreadPoolExecutor`；所有结果回到 UI 线程后先比对 `generation` 再 apply。stale 结果、已关闭 session 的回调全部丢弃（见 [6. Scheduler and generations](#6-scheduler-and-generations)）。
 - `PresentationBackend` 是唯一与 preview surface 交互的接口，两个候选（`HtmlSheet` / scratch `View` + `PhantomSet`）各实现一份；Phase 0 用同一套 contract test 与 gate 脚本对比后由 ADR 选定一个（见 [8. Presentation backend](#8-presentation-backend)）。
 - renderer 拆分为三段：`markdown2` 转换 → HTML 结构化（headings、images、mermaid、pre 修复）→ minihtml 序列化；网络与缓存从 `markdown2html.py` 移入 `assets/`，renderer 只声明依赖、不发请求（见 [9. Renderer](#9-renderer)、[10. Asset service](#10-asset-service)）。
@@ -23,7 +23,7 @@
 | Date | 2026-08-27 |
 | Source PRD | `docs/st4-native-redesign-prd.md` |
 | Package codename | `<PackageName>`; Python package directory `preview/` |
-| Runtime | Python 3.8 syntax, forward-compatible with 3.14 (PRD §11.1) |
+| Runtime | Sublime Text build 4205+, bundled Python 3.14; no 3.8 compatibility (PRD §11.1) |
 
 This document specifies how the PRD's requirements are implemented. It is
 written so that Phase 1 can start immediately after the Phase 0 ADR without
@@ -102,7 +102,7 @@ applies it through the session's `PresentationBackend` if it is still the latest
 
 ```text
 <PackageName>/
-├── .python-version                 # "3.8"
+├── .python-version                 # "3.14"
 ├── plugin.py                       # ST entry: re-exports commands/listeners, plugin_loaded/unloaded
 ├── Default (Linux|OSX|Windows).sublime-keymap
 ├── Default (Linux|OSX|Windows).sublime-mousemap
@@ -201,8 +201,8 @@ by the in-ST contract suite instead):
 ```python
 # preview/domain/contracts.py
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, Union
 from enum import Enum
+# Python 3.14 (PRD §11.1): builtin generics and PEP 604 unions; no typing.Optional/Tuple
 
 
 class PreviewMode(Enum):
@@ -216,7 +216,7 @@ class AssetKind(Enum):
     MERMAID = "mermaid"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class AssetKey:
     kind: AssetKind
     locator: str            # canonical absolute path, canonical URL, or mermaid request URL. NEVER logged.
@@ -229,7 +229,7 @@ class AssetKey:
         source is encoded in the URL *path*, so query stripping would not hide it."""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ThemeSnapshot:
     background: str         # "#rrggbb" from view.style()["background"]
     foreground: str
@@ -237,7 +237,7 @@ class ThemeSnapshot:
     accent: str             # scheme "accent" if present, else derived
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RenderSettings:
     update_delay_ms: int = 100
     enable_mermaid: bool = True
@@ -251,18 +251,18 @@ class RenderSettings:
     debug_logging: bool = False
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RenderRequest:
     session_id: str
     generation: int
     markdown: str
-    base_path: Optional[str]        # directory for relative assets, or None
+    base_path: str | None        # directory for relative assets, or None
     zoom: float                     # 0.5 .. 3.0; consumed by stylesheet.py only, never by parse/serialise
     settings: RenderSettings
     theme: ThemeSnapshot
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Heading:
     level: int                      # 1..6
     text: str
@@ -278,13 +278,13 @@ class DiagnosticStage(Enum):
     SERIALISE = "serialise"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RenderDiagnostic:
     stage: DiagnosticStage
     message: str                    # never contains document text or URL query strings
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class FetchedAsset:
     """A resolved asset. Lives in domain so that renderer (serialise) and
     assets (fetcher/cache) share it without either importing the other."""
@@ -305,30 +305,30 @@ class AssetStatus(Enum):
     TIMEOUT = "timeout"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Ready:
     asset: FetchedAsset
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Pending:
     pass
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Failed:
     status: AssetStatus
 
-AssetResult = Union[Ready, Pending, Failed]   # serialise() reads only data_uri/width/height and status
+type AssetResult = Ready | Pending | Failed   # PEP 695; serialise() reads only data_uri/width/height and status
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PreviewDocument:
     generation: int
     body_html: str                  # minihtml body without <style>, zoom-independent
-    headings: Tuple[Heading, ...]
-    asset_dependencies: Tuple[AssetKey, ...]
-    pending_assets: Tuple[AssetKey, ...]   # currently shown as placeholders
-    links: Tuple[str, ...]                 # relative document links, indexed by plugin links (§9.3)
-    diagnostics: Tuple[RenderDiagnostic, ...] = ()
+    headings: tuple[Heading, ...]
+    asset_dependencies: tuple[AssetKey, ...]
+    pending_assets: tuple[AssetKey, ...]   # currently shown as placeholders
+    links: tuple[str, ...]                 # relative document links, indexed by plugin links (§9.3)
+    diagnostics: tuple[RenderDiagnostic, ...] = ()
 ```
 
 Design points:
@@ -368,17 +368,17 @@ class PreviewSession:
     window_id: int
     source_buffer_id: int
     source_sheet_id: int
-    preview_surface: Optional["SurfaceHandle"]
-    toc_surface: Optional["SurfaceHandle"]
+    preview_surface: "SurfaceHandle" | None
+    toc_surface: "SurfaceHandle" | None
     mode: PreviewMode
     state: SessionState
     zoom: float = 1.0
     requested_generation: int = 0
     completed_generation: int = 0   # last generation whose result (success or failure) was processed
     successful_generation: int = 0  # last generation that produced a PreviewDocument and was shown; an error card does NOT advance it
-    last_document: Optional[PreviewDocument] = None
-    pending_assets: FrozenSet[AssetKey] = frozenset()
-    layout_groups: Set[int] = field(default_factory=set)   # owned groups, see §7.4
+    last_document: PreviewDocument | None = None
+    pending_assets: frozenset[AssetKey] = frozenset()
+    layout_groups: set[int] = field(default_factory=set)   # owned groups, see §7.4
     action_token: str = ""                     # random; validates plugin links (FR-061)
 ```
 
@@ -457,11 +457,9 @@ network_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="mdprevi
 ```
 
 - Two pools so a slow server cannot starve rendering (PRD §9).
-- `plugin_unloaded()` calls `shutdown(wait=False)`; on Python 3.9+
-  `cancel_futures=True` is passed when available (guarded with a version check
-  so 3.8 keeps working).
+- `plugin_unloaded()` calls `shutdown(wait=False, cancel_futures=True)`.
 - Render queue depth is exactly one per session: `session._inflight:
-  Optional[Tuple[int, Future]]` holds the in-flight generation. Newer requests
+  tuple[int, Future] | None` holds the in-flight generation. Newer requests
   never submit while it is set (rule 6.2-1a); they only raise
   `requested_generation`. Consequently a stale result can only be the single
   in-flight one, and it is discarded by rule 6.2-3 before the latest is
@@ -497,9 +495,9 @@ closes nothing, releases the TOC group with `restore=True`, sets
 
 ```python
 class SessionManager:
-    _by_id: Dict[str, PreviewSession]
-    _by_source: Dict[Tuple[int, int], str]       # (window_id, source_buffer_id) -> session id
-    _by_surface: Dict[int, str]                  # surface id (sheet or view id) -> session id
+    _by_id: dict[str, PreviewSession]
+    _by_source: dict[tuple[int, int], str]       # (window_id, source_buffer_id) -> session id
+    _by_surface: dict[int, str]                  # surface id (sheet or view id) -> session id
 ```
 
 Lookups always re-validate against Sublime (`backend.is_alive(handle)`,
@@ -548,11 +546,11 @@ class OwnedGroup:
     group: int
     previous_layout: dict        # layout before the plugin created the group
     fingerprint: str             # layout right after creation
-    holders: Set[str]            # session ids currently placed in this group
+    holders: set[str]            # session ids currently placed in this group
 
 
 class LayoutOwner:
-    _owned: Dict[int, Dict[int, OwnedGroup]]   # window_id -> group -> OwnedGroup
+    _owned: dict[int, dict[int, OwnedGroup]]   # window_id -> group -> OwnedGroup
 
     def acquire(self, window, anchor_group: int, role: GroupRole, session_id: str) -> int:
         """Return the index of the group immediately to the right of
@@ -570,7 +568,7 @@ class LayoutOwner:
         equals the anchor's c1 index."""
 
     @staticmethod
-    def split_cell(layout: dict, cell_index: int, new_share: float) -> Tuple[dict, int]:
+    def split_cell(layout: dict, cell_index: int, new_share: float) -> tuple[dict, int]:
         """Pure function over window.layout() dicts. In Sublime's layout
         format `cols`/`rows` are sorted fractional boundaries and each cell is
         [c0, r0, c1, r1] of INDICES into those lists (see the set_layout
@@ -658,7 +656,7 @@ empty, that the window's layout equals the expected fingerprint, that
 
 ```python
 # preview/application/ports.py
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class SurfaceHandle:
     kind: str          # "html_sheet" | "phantom_view"
     id: int            # sheet id or view id
@@ -683,10 +681,10 @@ class PresentationBackend(Protocol):
     def focus(self, handle: SurfaceHandle) -> None: ...                 # activate sheet AND its group
     def close(self, handle: SurfaceHandle) -> None: ...
     def is_alive(self, handle: SurfaceHandle) -> bool: ...
-    def group_of(self, handle: SurfaceHandle) -> Optional[int]: ...
+    def group_of(self, handle: SurfaceHandle) -> int | None: ...
     def set_title(self, handle: SurfaceHandle, title: str) -> None: ...
-    def live_handles(self, window) -> List[SurfaceHandle]: ...   # for reconciliation
-    def owner_of(self, sheet_or_view) -> Optional[str]: ...      # session id if owned
+    def live_handles(self, window) -> list[SurfaceHandle]: ...   # for reconciliation
+    def owner_of(self, sheet_or_view) -> str | None: ...      # session id if owned
 ```
 
 `move()` and `reveal()` are distinct because Sublime distinguishes
@@ -993,7 +991,7 @@ def render(request: RenderRequest, resolver: AssetResolverPort) -> PreviewDocume
 
 - `parse()` and `serialise()` are pure functions of their arguments and are
   unit-tested without any resolver.
-- `resolve()` returns `Dict[AssetKey, AssetResult]`; `serialise()` derives
+- `resolve()` returns `dict[AssetKey, AssetResult]`; `serialise()` derives
   `PreviewDocument.pending_assets` from the keys whose result is `Pending`,
   so pending state comes from the resolver's answer, not from renderer
   inference.
@@ -1100,7 +1098,7 @@ available inside sheets and phantoms; the explicit `theme` values are for
 class AssetResolver:
     def __init__(self, cache, fetcher, policy_provider, network_executor, run_on_ui, on_available):
         self._lock = threading.RLock()      # guards cache, _inflight, _waiters
-    def resolve(self, keys: Sequence[AssetKey], session_id: str) -> Dict[AssetKey, AssetResult]:
+    def resolve(self, keys: Sequence[AssetKey], session_id: str) -> dict[AssetKey, AssetResult]:
         """Called from a render worker. Non-blocking for remote keys.
         AssetResult, FetchedAsset and AssetStatus are domain types (§5)."""
     def forget_session(self, session_id: str) -> None:
@@ -1202,7 +1200,7 @@ class AssetCache:
 - Cache entries are `FetchedAsset`s (or negatives), so every fact the policy
   can later contradict is present: `effective_scheme`, `response_bytes`,
   `width`, `height`, and `fetched_revision`. `NetworkPolicy.evaluate(key,
-  asset) -> Optional[AssetStatus]` re-checks these on every hit and returns
+  asset) -> AssetStatus | None` re-checks these on every hit and returns
   `None` (permitted), `BLOCKED` (scheme not allowed — judged on
   `effective_scheme`, so an HTTPS URL that was cached after an opt-in
   HTTPS→HTTP redirect is invalidated when `allow_insecure_remote_images` is
@@ -1301,7 +1299,7 @@ def plugin_unloaded():
 
 | Suite | Runner | Doubles | Covers |
 | --- | --- | --- | --- |
-| `tests/unit` | CPython 3.8 & 3.14, `python -m unittest` | none (pure modules) | PRD §12.1 items; every module in `domain`, `renderer`, `assets`, `application` |
+| `tests/unit` | CPython 3.14, `python -m unittest` | none (pure modules) | PRD §12.1 items; every module in `domain`, `renderer`, `assets`, `application` |
 | `tests/state` | CPython | `FakeBackend`, `FakeClock`, `ImmediateExecutor`/`ManualExecutor`, `FakeResolver`, `FakeWindow` | PRD §12.2 matrix; generation ordering via `ManualExecutor.complete(i)` in arbitrary order |
 | `tests/contract` | inside ST via `mdpreview_run_contract_tests` command | real API, `FakeResolver` (no network) | backend contract: create/update/navigate/move/reveal (incl. populated-group case)/focus/close/is_alive/live_handles/owner_of; contexts; settings detach |
 | Phase 0 gate scripts | inside ST | real API | PRD §14 gates 1–4; the script drives the interaction, waits the fixed 500 ms, and writes a JSON step log to `docs/adr/phase0/`; screenshots are captured by the tester or an OS-level harness at each logged step, per the PRD §7.2 protocol — Sublime's API cannot capture the screen |
@@ -1339,5 +1337,5 @@ Resolved by Phase 0 or the first Phase 1 ADRs; none block starting Phase 0.
    and rewriting heading ids in `structure.py`.
 4. Whether `bs4` survives the renderer ADR (§9.2).
 5. Whether the TOC is a separate surface or in-preview (FR-050 allows both);
-   this design supports both through `toc_surface: Optional`, but the choice
+   this design supports both through `toc_surface: SurfaceHandle | None`, but the choice
    is constrained by the selected backend's `NavigationCapability` (§8.1).

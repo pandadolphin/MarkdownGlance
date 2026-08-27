@@ -5,7 +5,7 @@
 - 本项目将从零实现 ST4 orchestration 和 session model；现有 renderer、image logic、tests 与 fixtures 作为可继承并重构的资产，不做无收益的 clean-room rewrite（见 [2. Product decision](#2-product-decision)）。
 - presentation backend 尚未决定。Phase 0 将比较 Candidate A `HtmlSheet` 与 Candidate B scratch `View` + `PhantomSet`；若 `HtmlSheet` 无法同时满足 live update scroll retention 和 TOC navigation，则 Candidate A 整体淘汰，不做功能降级式 fallback（见 [7. Proposed architecture and backend decision](#7-proposed-architecture-and-backend-decision) 与 [14. Delivery plan](#14-delivery-plan)）。
 - 首个正式版本保留 Side-by-Side、Full Screen、live update、theme-aware styling、remote/local images、TOC、zoom 和 Mermaid；Mermaid 默认仍通过 remote service render，不宣称 offline 或内置 JavaScript rendering（见 [6. Functional requirements](#6-functional-requirements)）。
-- 截至本 PRD 日期，最低目标版本为正式发布的 Sublime Text 4 build 4107，`.python-version` 使用 `3.8`；官方文档说明 dev build 4205+ 会将该值映射至 Python 3.14，但 dev build 不作为最低发布版本（见 [11. Compatibility and dependencies](#11-compatibility-and-dependencies)）。
+- 最低目标版本定为 Sublime Text build 4205+（2026-04-23 发布，plugin runtime 升级为 Python 3.14；4206 于 2026-07-23 升级到 3.14.6），`.python-version` 使用 `3.14`。不支持 Python 3.8 host，代码可直接使用现代 typing 与 stdlib（见 [11. Compatibility and dependencies](#11-compatibility-and-dependencies)）。
 - Phase 0 是 backend 决策实验，不是对 `HtmlSheet` 路线的单向验证；其结果必须形成 ADR 后才能开始 production presentation code（见 [14. Delivery plan](#14-delivery-plan)）。
 - 现有主要结构性问题位于 `MarkdownLivePreview.py` 的 window/view lifecycle、全局 mutable registries 和 layout restoration，以及 `markdown2html.py` 的 render、network、image cache 与 HTML post-processing 耦合（见 [3. Problem statement](#3-problem-statement)）。
 
@@ -71,7 +71,7 @@ This creates four classes of problem:
    model.
 4. **ST4 alternatives are unevaluated.** Sublime Text 4 provides `Sheet`,
    `HtmlSheet`, `Window.new_html_sheet()`, `HtmlSheet.set_contents()`, modern
-   link protocols, and a Python 3.8 runtime. The package still models a preview
+   link protocols, and a Python 3.14 runtime. The package still models a preview
    as editable text plus a phantom, but the newer API has not yet been proven to
    preserve the scroll and navigation behavior required by this product.
 
@@ -684,30 +684,33 @@ cache limits must be explicit constants or settings.
 
 ## 11. Compatibility and dependencies
 
-### 11.1 Proposed baseline
+### 11.1 Baseline
 
-The release baseline is Sublime Text build 4107+, the first stable Sublime Text
-4 build, with `.python-version` containing `3.8`. The current public stable build
-at the time of this PRD is 4200 and still provides the Python 3.8 plugin host.
+**Requires Sublime Text Build 4205 or newer. Runs on Sublime Text's bundled
+Python 3.14 environment.**
 
-Build 4205 and later are currently dev builds. The official API Environments
-documentation states that these builds replace the Python 3.8 host with Python
-3.14 and treat `.python-version` value `3.8` as selecting the newer host for
-backwards compatibility. Therefore:
+Build 4205 (released 2026-04-23) replaced the Python 3.8 plugin host with
+Python 3.14; build 4206 (2026-07-23) updated it to Python 3.14.6. The package
+declares `.python-version` containing `3.14` and does not support the Python
+3.8 host. Consequences:
 
-- the public release must not require build 4205 or Python 3.14-only syntax;
-- production source remains compatible with Python 3.8 and Python 3.14;
-- the minimum-version compatibility gate runs on build 4107/Python 3.8;
-- the current-stable release gate runs on build 4200/Python 3.8;
-- a forward-compatibility job or manual gate runs on the current 4205+ dev build
-  when available to a licensed tester; and
-- Phase 1 verifies every retained dependency in both runtime classes before it
-  is accepted.
+- production source may use Python 3.14 language and stdlib features freely:
+  PEP 604 unions (`X | None`), builtin generics (`list[str]`), `match`,
+  `dataclass(slots=True)`, `concurrent.futures` `cancel_futures`, and modern
+  `typing` (`Protocol`, `TypeAlias`, `Self`); no 3.8 compatibility shims;
+- the minimum-version gate runs on build 4205/Python 3.14.0 and the
+  current-stable gate on the newest public build (4206/Python 3.14.6 at the
+  time of this PRD); both must pass;
+- Phase 1 verifies every retained dependency (`markdown2`, and `bs4` if kept)
+  imports and passes its tests on Python 3.14;
+- users on builds older than 4205 receive a Package Control incompatibility
+  message rather than a broken install: the package metadata declares
+  `"sublime_text": ">=4205"`.
 
-Build 4107 remains the declared minimum only while its integration and manual
-smoke gates are maintained. If that build cannot be installed in the release
-environment or the selected backend relies on a later API, raise the minimum to
-the oldest build actually tested; do not claim an untested compatibility floor.
+Rationale: the upstream `MarkdownLivePreview` package remains available for
+older builds, so dropping 3.8 costs no user a working preview, while carrying
+both runtimes would double the test matrix for a package that has not shipped
+yet.
 
 ### 11.2 Dependency policy
 
@@ -776,7 +779,7 @@ for a failed P0 contract by changing the product requirement.
 | Area | Cases |
 | --- | --- |
 | Platform | Linux, macOS, Windows |
-| Sublime build/runtime | 4107/Python 3.8 minimum gate; 4200/Python 3.8 current-stable gate; current 4205+ dev/Python 3.14 forward gate when available |
+| Sublime build/runtime | 4205/Python 3.14.0 minimum gate; newest public build (4206+/Python 3.14.6) current-stable gate |
 | Theme | Default light, default dark, one third-party color scheme |
 | Buffer | Saved, unsaved, Save As, renamed, deleted on disk |
 | Mode | Side-by-Side, Full Screen, repeated toggle, mode switch |
@@ -847,8 +850,8 @@ fallback. Production presentation code cannot begin until the ADR is approved.
 - Wrap the selected backend behind the production interface and port its Phase 0
   contract tests.
 - Import or refactor characterized renderer/image assets selected by their ADR.
-- Verify retained dependencies on build 4107/Python 3.8, build 4200/Python 3.8,
-  and the current 4205+ dev/Python 3.14 runtime when available.
+- Verify retained dependencies on build 4205/Python 3.14.0 and the newest
+  public build.
 - Run the §4.2 benchmark only for the selected backend and record the baseline.
 
 Exit gate: deterministic offline render tests and the selected backend's real ST4
@@ -900,10 +903,9 @@ The first public release is acceptable only when:
 - Latest-generation enforcement is covered by deterministic tests.
 - Package unload leaves no executor, settings callback, session, or owned
   presentation surface registered.
-- The build 4107/Python 3.8 minimum-version suite and manual smoke test pass on
-  the designated compatibility machine.
-- Linux, macOS, and Windows smoke tests pass on current stable build 4200; the
-  current 4205+ dev runtime forward gate passes when available.
+- The build 4205/Python 3.14.0 minimum-version suite and manual smoke test pass.
+- Linux, macOS, and Windows smoke tests pass on the newest public build.
+- Package Control metadata declares `"sublime_text": ">=4205"`.
 - README, settings, install message, license, attribution, privacy text, and
   manual test plan are complete.
 - The new package installs alongside upstream `MarkdownLivePreview` without
@@ -916,8 +918,8 @@ The first public release is acceptable only when:
 | `HtmlSheet` fails live-update scroll or TOC navigation | Candidate A cannot satisfy P0 | Reject Candidate A and select the phantom backend; do not weaken P0 |
 | User-closing an `HtmlSheet` has no documented `View` close event | Session or layout state may leak | Candidate A must prove bounded reconciliation or be rejected for lifecycle failure |
 | Phantom backend retains scratch-view and rendering constraints | UI chrome, flicker, or large-document defects | Backend contract, chrome suppression, large fixture, and viewport regression tests |
-| A dependency fails on Python 3.14 dev builds | Future ST builds break the package | Keep Python 3.8 release baseline, characterize dependencies, and test current dev runtime before release |
-| Build 4107 is no longer available in the release environment | Declared minimum is untested | Preserve a compatibility installation or raise the minimum to the oldest build actually tested |
+| A retained dependency does not run on Python 3.14 | Installation or import failure | Phase 1 import/test gate on 3.14; replace or vendor a fixed version; `bs4` is the only non-stdlib candidate besides `markdown2` |
+| Users on builds < 4205 install the package | Broken preview, support load | Package Control `sublime_text >= 4205` metadata; README states the requirement; upstream package remains for older builds |
 | minihtml lacks required HTML/CSS | Output differs from browser Markdown | Maintain a minihtml-specific presenter and compatibility fixtures |
 | Remote Mermaid exposes private source | Privacy and trust failure | Explicit disclosure, disable setting, configurable server, code fallback |
 | Layout restoration overwrites user changes | Data/UX disruption | Restore only a layout fingerprint still owned by the session |
@@ -948,11 +950,10 @@ These decisions block implementation beyond Phase 0:
 - [Sublime Text minihtml Reference](https://www.sublimetext.com/docs/minihtml.html)
   — supported markup, CSS, theme variables, images, and link protocols.
 - [Sublime Text API Environments](https://www.sublimetext.com/docs/api_environments.html)
-  — `.python-version` selection and build 4205 compatibility mapping.
-- [Sublime Text stable download and changelog](https://www.sublimetext.com/download)
-  — public stable build 4200 at the time of this PRD.
-- [Sublime Text dev builds](https://www.sublimetext.com/dev)
-  — build 4205 Python 3.14 upgrade and later development builds.
+  — `.python-version` selection; build 4205+ Python 3.14 host.
+- [Sublime Text download and changelog](https://www.sublimetext.com/download)
+  — build 4205 (2026-04-23, Python 3.14) and build 4206 (2026-07-23,
+  Python 3.14.6).
 - `MarkdownLivePreview.py` — reference behavior for commands, preview modes,
   session cleanup, zoom, layout, and settings access.
 - `markdown2html.py` — reference behavior for Markdown conversion, TOC, Mermaid,
