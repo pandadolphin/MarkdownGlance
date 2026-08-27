@@ -190,7 +190,8 @@ Acceptance criteria:
 - An edit schedules a render after `update_delay_ms`, defaulting to 100 ms.
 - A newer edit supersedes an older pending render.
 - The renderer receives an immutable snapshot of source text, source location,
-  viewport constraints, settings, and theme inputs.
+  settings, and theme inputs; width constraints are applied by the stylesheet,
+  so a group resize does not require a rerender.
 - Only the latest generation may update its presentation surface.
 - Saving, renaming, or changing the syntax triggers a fresh render when relevant.
 
@@ -329,6 +330,7 @@ The first release exposes:
     "allow_insecure_remote_images": false,
     "remote_timeout_seconds": 15,
     "remote_max_bytes": 10485760,
+    "remote_max_dimension": 4096,
     "toc_minimum_length": 1200,
     "toc_minimum_headings": 3,
     "debug_logging": false
@@ -466,7 +468,7 @@ both candidates. The decision table must include:
 | Live update at mid-document scroll | No jump to document start; reading position remains usable |
 | TOC navigation | Preview moves to the selected heading |
 | User closes preview | Session cleanup and eligible layout restoration finish within one UI callback after close, without another user action |
-| Side-by-Side / Full Screen switch | Focused-preview shortcut works; one session and one surface remain |
+| Side-by-Side / Full Screen switch | Focused-preview shortcut works; one session and one preview surface remain (plus at most one TOC surface when the TOC is a separate sheet) |
 
 #### Scroll-retention experiment protocol
 
@@ -551,7 +553,6 @@ class RenderRequest:
     generation: int
     markdown: str
     base_path: Optional[str]
-    viewport_width: float
     zoom: float
     settings: RenderSettings
     theme: ThemeSnapshot
@@ -576,8 +577,9 @@ class PreviewSession:
     backend: PresentationBackendKind
     mode: PreviewMode
     zoom: float
-    requested_generation: int
-    applied_generation: int
+    requested_generation: int      # bumped on every render request
+    completed_generation: int      # last generation whose result (success or failure) was processed
+    successful_generation: int     # last generation that produced a document and was shown
 ```
 
 IDs are validated against live Sublime objects at every API boundary. The
@@ -607,8 +609,12 @@ Required invariants:
 
 - A session owns zero or one preview surface and zero or one TOC surface through
   the selected backend.
-- `applied_generation <= requested_generation`.
+- `successful_generation <= completed_generation <= requested_generation`.
 - Only output whose generation equals `requested_generation` can be applied.
+- At most one render is in flight per session; when it completes,
+  `completed_generation` advances whether it succeeded or failed, and a newer
+  requested generation is dispatched immediately. A failing latest generation
+  is therefore rendered once, not retried in a loop.
 - Closing a source invalidates all pending work before closing owned presentation
   surfaces.
 - Closing a preview removes the session without closing or recreating the source.
@@ -825,7 +831,8 @@ Run only the four backend-selection gates:
    after each close action, without clicking or focusing another sheet.
 4. **Mode switch:** invoke the shortcut while the preview has focus, switch
    Side-by-Side to Full Screen and back, and verify that exactly one session and
-   one preview surface remain.
+   one preview surface remain (plus at most one TOC surface when the TOC is a
+   separate sheet, which must stay visible in its own group in both modes).
 
 Exit gate: publish an ADR selecting one backend. Candidate A is rejected if live
 update scroll retention, preview TOC navigation, close detection, or focused
