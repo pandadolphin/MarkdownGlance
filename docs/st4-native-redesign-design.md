@@ -3,7 +3,7 @@
 ## 中文摘要
 
 - 本文是 [`st4-native-redesign-prd.md`](st4-native-redesign-prd.md) 的实现设计，覆盖 module 划分、核心接口、session 状态机、generation 调度、asset service、renderer 复用边界、backend 契约以及 Phase 0 prototype 的具体做法。产品需求与 gate 定义以 PRD 为准，本文不重复。
-- 全部 Sublime API 调用被限制在 `adapter/` 和 `presentation/` 两层；`application/`、`domain/`、`renderer/`、`assets/` 不 import `sublime`，可用 CPython 3.8 直接跑测试（见 [3. Module layout](#3-module-layout)、[4. Dependency rules](#4-dependency-rules)）。
+- 全部 Sublime API 调用被限制在 `adapter/` 和 `presentation/` 两层；`application/`、`domain/`、`renderer/`、`assets/` 不 import `sublime`，可用 CPython 3.8 与 3.14 直接跑测试（CI 两者都跑）（见 [3. Module layout](#3-module-layout)、[4. Dependency rules](#4-dependency-rules)）。
 - 并发模型：每个 session 一个单调递增的 `generation`；render 与 network 分别使用 bounded `ThreadPoolExecutor`；所有结果回到 UI 线程后先比对 `generation` 再 apply。stale 结果、已关闭 session 的回调全部丢弃（见 [6. Scheduler and generations](#6-scheduler-and-generations)）。
 - `PresentationBackend` 是唯一与 preview surface 交互的接口，两个候选（`HtmlSheet` / scratch `View` + `PhantomSet`）各实现一份；Phase 0 用同一套 contract test 与 gate 脚本对比后由 ADR 选定一个（见 [8. Presentation backend](#8-presentation-backend)）。
 - renderer 拆分为三段：`markdown2` 转换 → HTML 结构化（headings、images、mermaid、pre 修复）→ minihtml 序列化；网络与缓存从 `markdown2html.py` 移入 `assets/`，renderer 只声明依赖、不发请求（见 [9. Renderer](#9-renderer)、[10. Asset service](#10-asset-service)）。
@@ -23,7 +23,7 @@
 | Date | 2026-08-27 |
 | Source PRD | `docs/st4-native-redesign-prd.md` |
 | Package codename | `<PackageName>`; Python package directory `preview/` |
-| Runtime | Python 3.8 syntax, forward-compatible with 3.14 (PRD §11.1) |
+| Runtime | Sublime Text build 4200 stable, Python 3.8 syntax; must also run unchanged on Python 3.14 (dev 4205+), tested in CI (PRD §11.1) |
 
 This document specifies how the PRD's requirements are implemented. It is
 written so that Phase 1 can start immediately after the Phase 0 ADR without
@@ -1301,7 +1301,7 @@ def plugin_unloaded():
 
 | Suite | Runner | Doubles | Covers |
 | --- | --- | --- | --- |
-| `tests/unit` | CPython 3.8 & 3.14, `python -m unittest` | none (pure modules) | PRD §12.1 items; every module in `domain`, `renderer`, `assets`, `application` |
+| `tests/unit` | CPython 3.8 **and** 3.14 (both required in CI), `python -m unittest` | none (pure modules) | PRD §12.1 items; every module in `domain`, `renderer`, `assets`, `application` |
 | `tests/state` | CPython | `FakeBackend`, `FakeClock`, `ImmediateExecutor`/`ManualExecutor`, `FakeResolver`, `FakeWindow` | PRD §12.2 matrix; generation ordering via `ManualExecutor.complete(i)` in arbitrary order |
 | `tests/contract` | inside ST via `mdpreview_run_contract_tests` command | real API, `FakeResolver` (no network) | backend contract: create/update/navigate/move/reveal (incl. populated-group case)/focus/close/is_alive/live_handles/owner_of; contexts; settings detach |
 | Phase 0 gate scripts | inside ST | real API | PRD §14 gates 1–4; the script drives the interaction, waits the fixed 500 ms, and writes a JSON step log to `docs/adr/phase0/`; screenshots are captured by the tester or an OS-level harness at each logged step, per the PRD §7.2 protocol — Sublime's API cannot capture the screen |
