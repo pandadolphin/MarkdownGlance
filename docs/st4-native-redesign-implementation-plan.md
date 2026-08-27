@@ -17,7 +17,7 @@
 | Date | 2026-08-27 |
 | Product requirements | [`st4-native-redesign-prd.md`](st4-native-redesign-prd.md) |
 | Detailed design | [`st4-native-redesign-design.md`](st4-native-redesign-design.md) |
-| Target runtime | Sublime Text build 4205+, bundled Python 3.14 |
+| Target runtime | Sublime Text build 4200 stable, Python 3.8; code also runs on Python 3.14 (dev 4205+) and is tested there |
 | Delivery model | Independent package that coexists with `MarkdownLivePreview` |
 
 This plan sequences the approved requirements and detailed design into reviewable
@@ -69,7 +69,7 @@ schedule failure.
 | --- | --- | --- | --- |
 | Backend ADR | End of Phase 0 | Gate logs, screenshots, pixel measurements, OS/build records for both candidates | All production presentation code |
 | Product/package name | Before Phase 1 package skeleton is merged | Package Control and GitHub collision search; command/settings/resource namespace | Package metadata and public identifiers |
-| Markdown dialect/parser ADR | Before renderer implementation replaces characterization scaffolding | Fixture comparison, Python 3.14 import/tests, extension list, license and package-size review | `MarkdownEngine` production selection |
+| Markdown dialect/parser ADR | Before renderer implementation replaces characterization scaffolding | Fixture comparison, Python 3.8 and 3.14 import/tests, extension list, license and package-size review | `MarkdownEngine` production selection |
 | Renderer reuse ADR | Early Phase 1 | Inventory of retained `markdown2html.py`, `lib/markdown2.py`, CSS, fixtures, and attribution | Destructive renderer refactors |
 | Mermaid default/privacy decision | Before Phase 4 UX is frozen | Privacy review of first-use, settings, README, and install copy | Public default for `enable_mermaid` |
 | Cache limits | Before Phase 3 cache merge | Memory-cost tests and 100 KiB/large-image fixtures | Production cache defaults |
@@ -80,7 +80,7 @@ A work package is complete only when:
 
 - production code, focused automated tests, and required documentation land in
   the same change;
-- pure layers pass under CPython 3.14 without importing `sublime`;
+- pure layers pass under CPython 3.8 and 3.14 without importing `sublime`;
 - all Sublime API access remains inside `adapter/` or `presentation/`;
 - asynchronous results are marshalled to the UI thread and validated against a
   live session and its latest generation before changing UI state;
@@ -170,9 +170,10 @@ produce deterministic offline minihtml through the selected backend.
 ### WP1.1 — Fix identity, metadata, and package boundaries
 
 - Select the final product/package name and create the package directory,
-  `.python-version` (`3.14`), `plugin.py`, unique command namespace, unique
+  `.python-version` (`3.8`), `plugin.py`, unique command namespace, unique
   settings filename, keymaps, command palette entry, metadata, and license.
-- Declare Package Control compatibility as `"sublime_text": ">=4205"`.
+- Declare Package Control compatibility as `"sublime_text": ">=4200"`.
+- Add CI jobs running the unit suite on CPython 3.8 and 3.14.
 - Add the `preview/{adapter,application,domain,renderer,assets,presentation}`
   package tree and test directories from the detailed design §3.
 - Add an import-boundary test that fails if `domain`, `renderer`, `assets`, or
@@ -202,8 +203,8 @@ minimum-version metadata.
   paragraphs, emphasis, links, block quotes, fenced/inline code, lists, raw HTML,
   Unicode, malformed input, Mermaid fences, TOC thresholds, pre whitespace, and
   extensionless images.
-- Run retained `markdown2` and `bs4` imports/tests on Python 3.14.0 and the
-  current stable runtime.
+- Run retained `markdown2` and `bs4` imports/tests on Python 3.8 (stable
+  build 4200) and Python 3.14 (newest dev build).
 - Publish the dialect/parser ADR with pinned extras, heading-id rules, retained
   dependency versions, licenses, and the decision on whether `bs4` remains.
 - Record expected differences before changing any characterized output.
@@ -237,7 +238,7 @@ appear in diagnostics or logs.
   target-group case for `reveal()`.
 - Delete or exclude all runtime code for the unselected backend.
 
-**Verify:** real ST contract suite passes on build 4205 and current stable; an
+**Verify:** real ST contract suite passes on stable build 4200 and the newest dev build; an
 unowned sheet/view is never closed during reconciliation.
 
 ### WP1.6 — Establish the benchmark baseline
@@ -248,7 +249,7 @@ unowned sheet/view is never closed during reconciliation.
   count, p50, and p95.
 
 **Phase 1 exit gate:** deterministic offline renderer tests pass, selected
-backend contract smoke passes on real ST, dependencies import on Python 3.14.0,
+backend contract smoke passes on real ST, dependencies import on Python 3.8 and 3.14,
 and the benchmark report establishes the reference baseline.
 
 ## 6. Phase 2 — Session lifecycle and preview modes
@@ -262,8 +263,8 @@ assets add more callbacks.
   protocols plus `SurfaceHandle`.
 - Build the adapter-owned dependency container in `plugin_loaded()`.
 - On unload, detach callbacks, close owned surfaces without layout restoration,
-  invalidate sessions, and shut down executors with
-  `wait=False, cancel_futures=True`.
+  invalidate sessions, and shut down executors with `wait=False`
+  (`cancel_futures=True` added only when the interpreter is 3.9+).
 
 ### WP2.2 — Implement `PreviewSession` and `SessionManager`
 
@@ -431,8 +432,8 @@ callbacks cannot update a closed session or supersede a newer generation.
 
 ### WP4.4 — Full release matrix
 
-- Run Linux, macOS, and Windows on build 4205/Python 3.14.0 and the newest public
-  build.
+- Run Linux, macOS, and Windows on stable build 4200/Python 3.8; run at least
+  one platform on the newest dev build/Python 3.14 as a blocking forward gate.
 - Cover default light/dark plus one third-party color scheme; saved, unsaved,
   Save As, renamed, and deleted files; short/100 KiB/Unicode/malformed/raw HTML;
   image and Mermaid policy/failure cases; TOC hierarchy/navigation; and every
@@ -451,7 +452,7 @@ complete manual matrix has evidence; no known P0 defect remains.
   metadata, README, install message, privacy copy, diagnostics, and screenshots.
 - Verify license and attribution for vendored code, CSS, images, and fixtures.
 - Verify only the selected backend ships and Package Control metadata enforces
-  build 4205+.
+  build 4200+.
 - Document old-to-new settings mapping and the Side-by-Side behavior change. Do
   not add automatic migration unless its open decision is separately approved.
 
