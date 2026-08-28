@@ -7,4 +7,5 @@
   server only when enabled.
 
 This is an independent package. Its default shortcuts overlap
-MarkdownLivePreview during coexistence; see `docs/migration.md`.
+MarkdownLivePreview during coexistence; see
+https://github.com/pandadolphin/MarkdownGlance/blob/main/docs/migration.md.

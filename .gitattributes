@@ -1,0 +1,10 @@
+# Package Control installs the GitHub archive of a tag, so everything the
+# editor does not load at runtime is excluded from it here: 3 MB of ADRs and
+# Phase 0 evidence, the test suite, and the repository's own scaffolding.
+/.github            export-ignore
+/docs               export-ignore
+/tests              export-ignore
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/CONTRIBUTING.md    export-ignore
+/SECURITY.md        export-ignore
