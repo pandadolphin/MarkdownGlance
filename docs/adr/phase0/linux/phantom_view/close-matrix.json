@@ -1,0 +1,31 @@
+{
+  "backend": "phantom_view",
+  "build": "4200",
+  "platform": "linux",
+  "results": [
+    {
+      "action": "mouse tab close",
+      "result": "pass",
+      "trigger": "ViewEventListener.on_pre_close",
+      "layout_restored": true
+    },
+    {
+      "action": "keyboard Ctrl+W",
+      "result": "pass",
+      "trigger": "ViewEventListener.on_pre_close",
+      "layout_restored": true
+    },
+    {
+      "action": "close_pane",
+      "result": "pass",
+      "trigger": "on_post_window_command(close_pane)",
+      "notes": "Sublime moved the still-live preview to the surviving group; no session close was required."
+    },
+    {
+      "action": "window close",
+      "result": "pass",
+      "trigger": "ViewEventListener.on_pre_close",
+      "layout_restored": false
+    }
+  ]
+}

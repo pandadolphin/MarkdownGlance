@@ -1,0 +1,85 @@
+{
+  "architecture": "x64",
+  "backend": "phantom_view",
+  "events": [
+    {
+      "details": {
+        "surface": {
+          "id": 97,
+          "kind": "phantom_view",
+          "window_id": 6
+        }
+      },
+      "event": "begin",
+      "monotonic": 58669.952882013
+    },
+    {
+      "details": {
+        "layout_restored": false,
+        "live_surfaces": 1,
+        "mode": "side_by_side"
+      },
+      "event": "mode_switched",
+      "monotonic": 58670.507080717
+    },
+    {
+      "details": {
+        "layout_restored": false,
+        "live_surfaces": 1,
+        "mode": "full_screen"
+      },
+      "event": "mode_switched",
+      "monotonic": 58682.885415417
+    },
+    {
+      "details": {
+        "layout_restored": false,
+        "live_surfaces": 1,
+        "mode": "side_by_side"
+      },
+      "event": "mode_switched",
+      "monotonic": 58693.692426294
+    },
+    {
+      "details": {},
+      "event": "view_pre_close",
+      "monotonic": 58724.002723202
+    },
+    {
+      "details": {
+        "layout_restored": false
+      },
+      "event": "view_close_reconciled",
+      "monotonic": 58724.066396916
+    }
+  ],
+  "observed_window_commands": [
+    {
+      "command": "close",
+      "monotonic": 58477.533317253
+    },
+    {
+      "command": "close",
+      "monotonic": 58563.09153764
+    },
+    {
+      "command": "close_pane",
+      "monotonic": 58671.218359677
+    },
+    {
+      "command": "close_pane",
+      "monotonic": 58702.317467941
+    }
+  ],
+  "os": "Linux-6.8.0-138-generic-x86_64-with-debian-bookworm-sid",
+  "platform": "linux",
+  "python": "3.3.7 (default, Mar 28 2024, 15:32:48) \n[GCC Clang 15.0.6]",
+  "schema": 1,
+  "session_id": "7fc0deb8368c4fa8aa63ab1d10217f32",
+  "settle_ms": 500,
+  "sublime_build": "4200",
+  "window_size_required": [
+    1280,
+    900
+  ]
+}

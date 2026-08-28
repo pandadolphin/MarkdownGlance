@@ -4,6 +4,7 @@
 
 - Critical path 是 `Phase 0 backend experiment → backend ADR → package/parser ADRs → pure core → session lifecycle → assets/UX → release`；在 backend ADR 获批前，不开始 production presentation code（见 [2. Delivery strategy](#2-delivery-strategy)）。
 - Phase 0 必须用同一 fixture 和 interaction script 比较 `HtmlSheet` 与 scratch `View` + `PhantomSet`。`HtmlSheet` 的 scroll retention、preview TOC navigation、close detection、focused-preview mode switch 任一失败，就选择 Candidate B，不降低 P0 要求（见 [4. Phase 0](#4-phase-0--presentation-backend-decision)）。
+- 当前 required platform 仅为 Linux；macOS/Windows matrix 延后到 future testing，不阻塞任何 phase gate 或 release（见 [4](#4-phase-0--presentation-backend-decision)、[8](#8-phase-4--mermaid-diagnostics-and-hardening)）。
 - Phase 1 先锁定 package name、Markdown dialect、dependency/reuse boundary，再建立 pure domain、renderer、sanitisation 和 selected backend；现有 `markdown2html.py`、`resources/` 与 `tests/test_markdown2html.py` 只按 characterization tests 逐项迁移（见 [5. Phase 1](#5-phase-1--package-skeleton-and-pure-core)）。
 - Phase 2 实现 session、generation scheduler、layout ownership 和 commands/events；其 exit gate 是完整 lifecycle matrix 通过，且 plugin 从不 close 或 recreate source sheet（见 [6. Phase 2](#6-phase-2--session-lifecycle-and-preview-modes)）。
 - Phase 3/4 再加入 local/remote assets、theme、TOC、zoom、Mermaid、diagnostics 与 hardening；network 始终与 render executor 分离，所有 callback 在 UI thread 比对 session 和 generation 后才可 apply（见 [7](#7-phase-3--assets-styling-toc-and-zoom) 与 [8](#8-phase-4--mermaid-diagnostics-and-hardening)）。
@@ -17,7 +18,7 @@
 | Date | 2026-08-27 |
 | Product requirements | [`st4-native-redesign-prd.md`](st4-native-redesign-prd.md) |
 | Detailed design | [`st4-native-redesign-design.md`](st4-native-redesign-design.md) |
-| Target runtime | Sublime Text build 4200 stable, Python 3.8; code also runs on Python 3.14 (dev 4205+) and is tested there |
+| Target runtime | Sublime Text build 4200 stable/Python 3.8; CPython 3.14 CI and dev-build testing are non-blocking forward evidence |
 | Delivery model | Independent package that coexists with `MarkdownLivePreview` |
 
 This plan sequences the approved requirements and detailed design into reviewable
@@ -57,7 +58,8 @@ Work proceeds by vertical risk reduction, not by module count:
 3. Prove lifecycle and latest-generation semantics with fakes before adding
    network callbacks.
 4. Add assets and user-facing features only after session cleanup is reliable.
-5. Run the full platform matrix only after deterministic suites pass.
+5. Run the required Linux matrix only after deterministic suites pass; defer
+   macOS and Windows to future compatibility testing.
 
 No calendar estimate is attached to a phase until its incoming gate passes.
 Phase 0 can invalidate Candidate A by design; that result is progress, not a
@@ -130,7 +132,8 @@ the screenshot checkpoints occur after the fixed 500 ms settle interval.
 - Do not add partial rendering, source navigation, periodic polling, undocumented
   callbacks, or a reduced TOC as workarounds.
 
-**Verify:** execute all four gates from PRD §14 on Linux, macOS, and Windows.
+**Verify:** execute all four gates from PRD §14 on Linux. macOS and Windows are
+deferred future testing and do not block the backend decision.
 Any missing close trigger or focused shortcut path is a failure, even if a later
 safety-net event eventually cleans up.
 
@@ -159,8 +162,9 @@ Candidate A. Record navigation error for top, middle, and bottom headings.
   experiment evidence and backend contract tests.
 
 **Phase 0 exit gate:** backend ADR approved; all four gates have explicit pass or
-fail evidence for both candidates; selected-backend contract tests pass on all
-three platforms. No Phase 1 production backend work starts earlier.
+fail evidence for both candidates on Linux; selected-backend contract tests pass
+on Linux. No Phase 1 production backend work starts earlier. macOS and Windows
+evidence is future testing.
 
 ## 5. Phase 1 — Package skeleton and pure core
 
@@ -203,8 +207,8 @@ minimum-version metadata.
   paragraphs, emphasis, links, block quotes, fenced/inline code, lists, raw HTML,
   Unicode, malformed input, Mermaid fences, TOC thresholds, pre whitespace, and
   extensionless images.
-- Run retained `markdown2` and `bs4` imports/tests on Python 3.8 (stable
-  build 4200) and Python 3.14 (newest dev build).
+- Run retained `markdown2` imports/tests on Python 3.8 (stable build 4200) and
+  CPython 3.14 CI. A newest-dev integration run is optional.
 - Publish the dialect/parser ADR with pinned extras, heading-id rules, retained
   dependency versions, licenses, and the decision on whether `bs4` remains.
 - Record expected differences before changing any characterized output.
@@ -238,7 +242,8 @@ appear in diagnostics or logs.
   target-group case for `reveal()`.
 - Delete or exclude all runtime code for the unselected backend.
 
-**Verify:** real ST contract suite passes on stable build 4200 and the newest dev build; an
+**Verify:** real ST contract suite passes on stable build 4200; a newest-dev run
+is useful forward evidence but is not a phase or release gate. An
 unowned sheet/view is never closed during reconciliation.
 
 ### WP1.6 — Establish the benchmark baseline
@@ -312,7 +317,7 @@ duplicates a surface, changes zoom, or closes/recreates the source.
 
 - Add `WindowCommand`s for Side-by-Side, Full Screen toggle, zoom, reset, and
   relative-link/navigation actions.
-- Implement `mdpreview.preview_focused` and `mdpreview.markdown_source` contexts
+- Implement `mdglance.preview_focused` and `mdglance.markdown_source` contexts
   from `window.active_sheet()` and Markdown scope.
 - Marshal complete async event use cases to the UI thread before registry access.
 - Observe edit, save, Save As/rename, syntax, source/surface close, window close,
@@ -430,10 +435,11 @@ callbacks cannot update a closed session or supersede a newer generation.
 - Check long previews for phantom flicker/chrome/selection issues if Candidate B
   was selected.
 
-### WP4.4 — Full release matrix
+### WP4.4 — Required release matrix
 
-- Run Linux, macOS, and Windows on stable build 4200/Python 3.8; run at least
-  one platform on the newest dev build/Python 3.14 as a blocking forward gate.
+- Run Linux on stable build 4200/Python 3.8 as the release gate. Keep CPython
+  3.14 CI and newest-dev integration testing as non-blocking forward evidence.
+  Defer macOS and Windows to future compatibility testing.
 - Cover default light/dark plus one third-party color scheme; saved, unsaved,
   Save As, renamed, and deleted files; short/100 KiB/Unicode/malformed/raw HTML;
   image and Mermaid policy/failure cases; TOC hierarchy/navigation; and every
@@ -489,7 +495,7 @@ to test output, ADR, metadata, documentation, or manual evidence.
 | FR-070 settings | WP1.2, WP3.5 | Validation/change-classification/callback-cleanup tests |
 | FR-071 diagnostics | WP4.2 | Secret-exclusion tests |
 | Security/privacy/reliability | WP1.4, WP2.3, WP3.2–3.3, WP4.1–4.3 | Sanitizer, failure injection, safe-log tests |
-| Compatibility/release | WP1.1, WP1.5–1.6, WP4.4, WP5.1–5.3 | Build/platform matrix and Package Control metadata |
+| Compatibility/release | WP1.1, WP1.5–1.6, WP4.4, WP5.1–5.3 | Required Linux build matrix and Package Control metadata; macOS/Windows deferred |
 
 ## 11. Execution checklist
 
@@ -503,5 +509,5 @@ issue tracker rather than in this design document.
 - [ ] Phase 2 lifecycle and preview-mode gate passed.
 - [ ] Cache limits and Mermaid default/privacy decisions recorded.
 - [ ] Phase 3 offline-feature and asset-generation gate passed.
-- [ ] Phase 4 P0, security/privacy, performance, and platform matrix passed.
+- [ ] Phase 4 P0, security/privacy, performance, and required Linux matrix passed.
 - [ ] Phase 5 package-completeness, coexistence, beta, and release gates passed.

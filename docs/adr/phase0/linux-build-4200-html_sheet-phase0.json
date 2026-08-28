@@ -1,0 +1,152 @@
+{
+  "architecture": "x64",
+  "backend": "html_sheet",
+  "events": [
+    {
+      "details": {
+        "surface": {
+          "id": 146,
+          "kind": "html_sheet",
+          "window_id": 6
+        }
+      },
+      "event": "begin",
+      "monotonic": 58486.935605577
+    },
+    {
+      "details": {
+        "duration_s": 0.0007632079941686243,
+        "edit": 1
+      },
+      "event": "update_returned",
+      "monotonic": 58538.29863526
+    },
+    {
+      "details": {
+        "duration_s": 0.0007438609973178245,
+        "edit": 2
+      },
+      "event": "update_returned",
+      "monotonic": 58539.56517646
+    },
+    {
+      "details": {
+        "duration_s": 0.0007425380026688799,
+        "edit": 3
+      },
+      "event": "update_returned",
+      "monotonic": 58540.82995296
+    },
+    {
+      "details": {
+        "duration_s": 0.0007903360019554384,
+        "edit": 4
+      },
+      "event": "update_returned",
+      "monotonic": 58542.104592334
+    },
+    {
+      "details": {
+        "duration_s": 0.0008021840039873496,
+        "edit": 5
+      },
+      "event": "update_returned",
+      "monotonic": 58543.885118672
+    },
+    {
+      "details": {
+        "duration_s": 0.0008281650007120334,
+        "edit": 6
+      },
+      "event": "update_returned",
+      "monotonic": 58545.161516132
+    },
+    {
+      "details": {
+        "duration_s": 0.0008640050000394695,
+        "edit": 7
+      },
+      "event": "update_returned",
+      "monotonic": 58546.448963127
+    },
+    {
+      "details": {
+        "duration_s": 0.0007642830023542047,
+        "edit": 8
+      },
+      "event": "update_returned",
+      "monotonic": 58547.707410742
+    },
+    {
+      "details": {
+        "duration_s": 0.0007380509996437468,
+        "edit": 9
+      },
+      "event": "update_returned",
+      "monotonic": 58548.972964089
+    },
+    {
+      "details": {
+        "duration_s": 0.0007907559993327595,
+        "edit": 10
+      },
+      "event": "update_returned",
+      "monotonic": 58550.235973451
+    },
+    {
+      "details": {
+        "gate": "scroll_retention",
+        "notes": "11 captures are pixel-identical after ten verified set_contents updates; SCROLL-ANCHOR-100 stayed at y=656..675",
+        "result": "pass"
+      },
+      "event": "gate_result",
+      "monotonic": 58561.785043294
+    },
+    {
+      "details": {
+        "gate": "navigation",
+        "notes": "Clicking #section-100 produced no visible movement in the fixed-protocol run",
+        "result": "fail"
+      },
+      "event": "gate_result",
+      "monotonic": 58562.133402965
+    },
+    {
+      "details": {
+        "gate": "focused_shortcut",
+        "notes": "Ctrl+Shift+V with HtmlSheet focused did not dispatch; layout remained 1x1",
+        "result": "fail"
+      },
+      "event": "gate_result",
+      "monotonic": 58562.494750223
+    },
+    {
+      "details": {
+        "layout_restored": false
+      },
+      "event": "surface_closed",
+      "monotonic": 58563.101596501
+    }
+  ],
+  "observed_window_commands": [
+    {
+      "command": "close",
+      "monotonic": 58477.533317253
+    },
+    {
+      "command": "close",
+      "monotonic": 58563.09153764
+    }
+  ],
+  "os": "Linux-6.8.0-138-generic-x86_64-with-debian-bookworm-sid",
+  "platform": "linux",
+  "python": "3.3.7 (default, Mar 28 2024, 15:32:48) \n[GCC Clang 15.0.6]",
+  "schema": 1,
+  "session_id": "fdc6d4d2c1564a1d8ddb78c1dc0b8061",
+  "settle_ms": 500,
+  "sublime_build": "4200",
+  "window_size_required": [
+    1280,
+    900
+  ]
+}

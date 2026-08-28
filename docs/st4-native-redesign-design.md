@@ -3,6 +3,7 @@
 ## 中文摘要
 
 - 本文是 [`st4-native-redesign-prd.md`](st4-native-redesign-prd.md) 的实现设计，覆盖 module 划分、核心接口、session 状态机、generation 调度、asset service、renderer 复用边界、backend 契约以及 Phase 0 prototype 的具体做法。产品需求与 gate 定义以 PRD 为准，本文不重复。
+- 当前 required platform 仅为 Linux；macOS/Windows compatibility testing 延后到 future testing，不阻塞 Phase 0、implementation 或首个 release（见 [1. Scope and status](#1-scope-and-status)）。
 - 全部 Sublime API 调用被限制在 `adapter/` 和 `presentation/` 两层；`application/`、`domain/`、`renderer/`、`assets/` 不 import `sublime`，可用 CPython 3.8 与 3.14 直接跑测试（CI 两者都跑）（见 [3. Module layout](#3-module-layout)、[4. Dependency rules](#4-dependency-rules)）。
 - 并发模型：每个 session 一个单调递增的 `generation`；render 与 network 分别使用 bounded `ThreadPoolExecutor`；所有结果回到 UI 线程后先比对 `generation` 再 apply。stale 结果、已关闭 session 的回调全部丢弃（见 [6. Scheduler and generations](#6-scheduler-and-generations)）。
 - `PresentationBackend` 是唯一与 preview surface 交互的接口，两个候选（`HtmlSheet` / scratch `View` + `PhantomSet`）各实现一份；Phase 0 用同一套 contract test 与 gate 脚本对比后由 ADR 选定一个（见 [8. Presentation backend](#8-presentation-backend)）。
@@ -13,17 +14,18 @@
 - renderer 拆为 `parse`（pure）→ `resolver.resolve`（唯一副作用步，`RLock` 保护，网络完成回调先 marshal 到 UI 线程）→ `serialise`（pure）；`pending_assets` 由 resolver 的返回值推导（见 [9.1](#91-pipeline)、[10.1](#101-resolver)）。
 - navigation：Candidate B 沿用现有 ratio × `layout_extent()` 方案；Candidate A 没有任何 API 能定位 `HtmlSheet`，只可能以 in-preview TOC + fragment link 形式通过 gate 2，即 A 与 separate TOC sheet 互斥，需写入 ADR（见 [8.2](#82-candidate-a--htmlsheet)、[8.3](#83-candidate-b--scratch-view--phantomset)）。
 - diagnostics/log 只允许出现 `AssetKey.safe_label`（host/basename + hash），Mermaid URL 的 path 含 diagram 源码，任何模式下都不记录（见 [5](#5-domain-contracts)、[10.2](#102-fetcher)）。
-- 已知不确定点：`HtmlSheet` 的 scroll、navigation、close event 三项（PRD gate）；`on_post_window_command` 对各种关闭路径报告的 command 名；`bs4` 是否保留取决于 Phase 1 的 renderer ADR（见 [13. Open questions](#13-open-questions)）。
+- 已解决的 implementation gates：ADR 0001 选择 scratch `View` + `PhantomSet`，ADR 0003 删除 `bs4`，ADR 0005 将 Mermaid 设为 opt-in；Linux/ST 4200 证明 minihtml root zoom 必须使用 `px`，preview `View` 必须启用 `word_wrap`。
 
 ## 1. Scope and status
 
 | Field | Value |
 | --- | --- |
-| Status | Draft, pending Phase 0 backend ADR |
+| Status | Approved for implementation; ADR 0001 selects scratch `View` + `PhantomSet` |
 | Date | 2026-08-27 |
 | Source PRD | `docs/st4-native-redesign-prd.md` |
-| Package codename | `<PackageName>`; Python package directory `preview/` |
-| Runtime | Sublime Text build 4200 stable, Python 3.8 syntax; must also run unchanged on Python 3.14 (dev 4205+), tested in CI (PRD §11.1) |
+| Package name | `MarkdownGlance`; Python package directory `preview/` |
+| Runtime | Sublime Text build 4200 stable/Python 3.8 is the release gate; CPython 3.14 CI and dev-build testing are non-blocking forward evidence (PRD §11.1) |
+| Required platform | Linux; macOS and Windows are deferred future testing and are not release gates |
 
 This document specifies how the PRD's requirements are implemented. It is
 written so that Phase 1 can start immediately after the Phase 0 ADR without
@@ -101,14 +103,14 @@ applies it through the session's `PresentationBackend` if it is still the latest
 ## 3. Module layout
 
 ```text
-<PackageName>/
+MarkdownGlance/
 ├── .python-version                 # "3.8"
 ├── plugin.py                       # ST entry: re-exports commands/listeners, plugin_loaded/unloaded
 ├── Default (Linux|OSX|Windows).sublime-keymap
 ├── Default (Linux|OSX|Windows).sublime-mousemap
 ├── Default.sublime-commands
 ├── Main.sublime-menu               # optional; Preferences > Package Settings entry
-├── <PackageName>.sublime-settings
+├── MarkdownGlance.sublime-settings
 ├── messages.json, messages/        # install + privacy notice (FR-040)
 ├── preview/
 │   ├── __init__.py
@@ -149,7 +151,7 @@ applies it through the session's `PresentationBackend` if it is still the latest
 │       ├── phantom_view.py         # Candidate B
 │       ├── layout.py               # LayoutOwner: fingerprint, create/restore group
 │       └── contexts.py             # on_query_context keys for owned surfaces
-├── lib/                            # vendored markdown2 (+ bs4 only if ADR keeps it)
+├── lib/                            # vendored markdown2 2.3.9 (MIT); no bs4
 ├── resources/
 │   ├── preview.css
 │   ├── loading.png, missing.png    # embedded as data URIs at load
@@ -164,6 +166,8 @@ applies it through the session's `PresentationBackend` if it is still the latest
 │       └── ...
 └── docs/
     ├── architecture.md             # this document, trimmed after Phase 0
+    ├── migration.md
+    ├── verification/
     ├── adr/
     └── manual-test-plan.md
 ```
@@ -183,7 +187,7 @@ by the in-ST contract suite instead):
 | Layer | May import | Must not import |
 | --- | --- | --- |
 | `domain` | stdlib | anything else in the package |
-| `renderer` | `domain`, `lib/markdown2`, (`bs4` while retained) | `sublime`, `assets`, `application` — it exposes `parse()`/`serialise()` only and never sees a resolver |
+| `renderer` | `domain`, `lib/markdown2` | `sublime`, `assets`, `application` — it exposes `parse()`/`serialise()` only and never sees a resolver |
 | `assets` | `domain`, stdlib `urllib`, `ssl`, `struct` | `sublime`, `renderer` |
 | `application` | `domain`, `renderer`, `assets` | `sublime`, `presentation`, `adapter` |
 | `presentation` | `sublime`, `domain`, `application.ports` (protocols and `SurfaceHandle` only) | `renderer`, `assets`, other `application` modules |
@@ -240,7 +244,7 @@ class ThemeSnapshot:
 @dataclass(frozen=True)
 class RenderSettings:
     update_delay_ms: int = 100
-    enable_mermaid: bool = True
+    enable_mermaid: bool = False
     mermaid_server: str = "https://mermaid.ink"
     allow_insecure_remote_images: bool = False
     remote_timeout_seconds: float = 15.0
@@ -452,8 +456,8 @@ Rules:
 
 ```python
 # preview/adapter/executors.py
-render_executor  = ThreadPoolExecutor(max_workers=2, thread_name_prefix="mdpreview-render")
-network_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="mdpreview-net")
+render_executor  = ThreadPoolExecutor(max_workers=2, thread_name_prefix="mdglance-render")
+network_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="mdglance-net")
 ```
 
 - Two pools so a slow server cannot starve rendering (PRD §9).
@@ -533,8 +537,8 @@ which has no `View`). `is_enabled()`:
   surface.
 - zoom/navigate commands: active sheet is an owned surface.
 
-Key bindings use `on_query_context` keys `mdpreview.preview_focused` and
-`mdpreview.markdown_source` (implemented in `presentation/contexts.py`, §8.6),
+Key bindings use `on_query_context` keys `mdglance.preview_focused` and
+`mdglance.markdown_source` (implemented in `presentation/contexts.py`, §8.6),
 never `setting.*` keys, because Candidate A surfaces have no settings.
 
 ### 7.4 Layout ownership
@@ -718,9 +722,9 @@ backend is exercised through the in-ST gate 2 script instead.
 Ownership tagging must survive a plugin reload (module state is lost, Sublime
 objects persist). Both backends record ownership in Sublime-owned storage:
 
-- Candidate B: `view.settings().set("mdpreview.session", id)`.
+- Candidate B: `view.settings().set("mdglance.session", id)`.
 - Candidate A: `HtmlSheet` has no settings, so ownership is written to
-  `window.settings().set("mdpreview.html_sheets", {str(sheet.id()): session_id})`
+  `window.settings().set("mdglance.html_sheets", {str(sheet.id()): session_id})`
   (window settings persist for the life of the window and sheet ids are
   stable within a Sublime process). `owner_of()` and `live_handles()` read this
   map; `close()` removes the entry.
@@ -735,7 +739,7 @@ surfaces; entries whose sheet no longer exists are dropped from the map.
 
 ```python
 class HtmlSheetBackend:
-    OWNER_KEY = "mdpreview.html_sheets"
+    OWNER_KEY = "mdglance.html_sheets"
 
     def create(self, window, group, title, session_id):
         sheet = window.new_html_sheet(title, "", flags=0, group=group)
@@ -814,9 +818,9 @@ class PhantomViewBackend:
         window.set_view_index(view, group, len(window.views_in_group(group)))
         view.set_scratch(True); view.set_read_only(True); view.set_name(title)
         s = view.settings()
-        s.set("mdpreview.session", session_id)
+        s.set("mdglance.session", session_id)
         for k, v in CHROME_SUPPRESSION.items(): s.set(k, v)
-        self._phantoms[view.id()] = sublime.PhantomSet(view, "mdpreview")
+        self._phantoms[view.id()] = sublime.PhantomSet(view, "mdglance")
         return SurfaceHandle("phantom_view", view.id(), window.id())
 
     def update(self, handle, html):
@@ -848,13 +852,13 @@ so every marker would sit at offset 0.
 CHROME_SUPPRESSION = {
     "gutter": False, "line_numbers": False, "fold_buttons": False,
     "draw_indent_guides": False, "highlight_line": False, "caret_extra_width": 0,
-    "caret_style": "solid", "scroll_past_end": False, "word_wrap": False,
+    "caret_style": "solid", "scroll_past_end": False, "word_wrap": True,
     "rulers": [], "draw_white_space": "none", "is_widget": True,   # hides from some pickers
 }
 ```
 
 - Close detection uses `ViewEventListener.on_pre_close` filtered by
-  `settings.has("mdpreview.session")` — documented and synchronous.
+  `settings.has("mdglance.session")` — documented and synchronous.
 - Scroll retention: `PhantomSet.update()` replaces the phantom in place;
   current package shows the viewport is retained. The Phase 0 control run
   quantifies this with the same protocol.
@@ -865,7 +869,7 @@ The TOC is a second surface of the same backend kind, created with
 `create(window, toc_group, "TOC: <name>", session_id)` and tagged
 `role = "toc"`. It is rendered from `PreviewDocument.headings` by
 `renderer/toc.py`; each entry is a plugin link
-`subl:mdpreview_navigate {"token": "<action_token>", "slug": "<slug>"}` (FR-061:
+`subl:mdglance_navigate {"token": "<action_token>", "slug": "<slug>"}` (FR-061:
 opaque token, no paths). The command handler validates the token against the
 session before calling `navigate()`.
 
@@ -918,10 +922,10 @@ A pending zero-delay reconcile per window is coalesced through
 ```python
 class PreviewContextListener(sublime_plugin.EventListener):
     def on_query_context(self, view, key, operator, operand, match_all):
-        if key == "mdpreview.preview_focused":
+        if key == "mdglance.preview_focused":
             sheet = view.window().active_sheet() if view.window() else None
             return _matches(backend.owner_of(sheet) is not None, operator, operand)
-        if key == "mdpreview.markdown_source":
+        if key == "mdglance.markdown_source":
             return _matches(view.match_selector(0, "text.html.markdown"), operator, operand)
         return None
 ```
@@ -936,18 +940,18 @@ Keymap (Linux; OSX uses `super`):
 
 ```json
 [
-  {"keys": ["ctrl+k", "v"], "command": "mdpreview_open_side_by_side",
-   "context": [{"key": "mdpreview.markdown_source"}]},
-  {"keys": ["ctrl+shift+v"], "command": "mdpreview_toggle_full_screen",
-   "context": [{"key": "mdpreview.markdown_source"}]},
-  {"keys": ["ctrl+shift+v"], "command": "mdpreview_toggle_full_screen",
-   "context": [{"key": "mdpreview.preview_focused"}]},
-  {"keys": ["ctrl+="], "command": "mdpreview_zoom", "args": {"delta": 0.1},
-   "context": [{"key": "mdpreview.preview_focused"}]},
-  {"keys": ["ctrl+-"], "command": "mdpreview_zoom", "args": {"delta": -0.1},
-   "context": [{"key": "mdpreview.preview_focused"}]},
-  {"keys": ["ctrl+0"], "command": "mdpreview_zoom", "args": {"reset": true},
-   "context": [{"key": "mdpreview.preview_focused"}]}
+  {"keys": ["ctrl+k", "v"], "command": "mdglance_open_side_by_side",
+   "context": [{"key": "mdglance.markdown_source", "operator": "equal", "operand": true}]},
+  {"keys": ["ctrl+shift+v"], "command": "mdglance_toggle_full_screen",
+   "context": [{"key": "mdglance.markdown_source", "operator": "equal", "operand": true}]},
+  {"keys": ["ctrl+shift+v"], "command": "mdglance_toggle_full_screen",
+   "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]},
+  {"keys": ["ctrl+="], "command": "mdglance_zoom", "args": {"delta": 0.1},
+   "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]},
+  {"keys": ["ctrl+-"], "command": "mdglance_zoom", "args": {"delta": -0.1},
+   "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]},
+  {"keys": ["ctrl+0"], "command": "mdglance_zoom", "args": {"reset": true},
+   "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]}
 ]
 ```
 
@@ -1013,10 +1017,9 @@ def render(request: RenderRequest, resolver: AssetResolverPort) -> PreviewDocume
 | `get_image_size` (PNG/JPEG/GIF header parsing) | Moved verbatim to `assets/images.py`; it is already pure. |
 | `resources/stylesheet.css`, loading/404 images | Kept; CSS split into base + theme variables + zoom root rule. |
 
-`bs4` retention: Phase 1 first ports with `bs4` still present (lowest risk),
-then the renderer ADR decides whether an `html.parser`-based
-`HTMLParser` subclass in `structure.py` can replace it. The dependency rule
-table (§4) already confines `bs4` to `renderer`, so the swap is local.
+ADR 0003 removes `bs4`. `structure.py` uses a purpose-built stdlib
+`HTMLParser` tree; the characterization and sanitizer suites cover the
+replacement boundary.
 
 ### 9.3 Sanitisation (FR-020, PRD §10.1)
 
@@ -1037,12 +1040,12 @@ table (§4) already confines `bs4` to `renderer`, so the swap is local.
      emitted as plain text.
   2. `https` and `http` — emitted verbatim (opened by ST in the browser).
   3. relative document links (no scheme, not starting with `#`) — rewritten to
-     `subl:mdpreview_open_relative {"token":…,"path":…}` where `path` is an
+     `subl:mdglance_open_relative {"token":…,"path":…}` where `path` is an
      index into `PreviewDocument.links`, not the text.
   4. everything else (`file:`, `subl:`, `javascript:`, unknown schemes) —
      emitted as plain text with a `class="blocked-link"` span.
   Plugin-generated TOC links for a `PROGRAMMATIC` backend
-  (`subl:mdpreview_navigate …`) are produced by the serialiser itself after
+  (`subl:mdglance_navigate …`) are produced by the serialiser itself after
   this walk and never originate from source, so rule 4 cannot reject them.
 - text nodes escaped with `html.escape(quote=True)`.
 
@@ -1055,7 +1058,7 @@ walker, so it is subject to the same allowlist.
 def stylesheet(theme: ThemeSnapshot, zoom: float, base_css: str) -> str:
     return f"""
     <style>
-    html {{ font-size: {round(zoom * 100)}%; }}
+    html {{ font-size: {round(zoom * 16)}px; }}
     body {{ background-color: {theme.background}; color: {theme.foreground}; }}
     {base_css}
     </style>"""
@@ -1086,7 +1089,7 @@ available inside sheets and phantoms; the explicit `theme` values are for
 
 `renderer/errors.py` produces:
 
-- error card: stage label + message, `class="mdpreview-error"`, border + bold
+- error card: stage label + message, `class="mdglance-error"`, border + bold
   (not colour-only, PRD §13)
 - asset placeholders: `Loading`, `Unavailable`, `Blocked by settings`,
   `Too large`, `Timed out` — a fixed `data:` PNG plus caption; caption text is
@@ -1241,10 +1244,10 @@ privacy caption ("Diagram source is sent to <host>") once per session (PRD §13)
 
 ### 11.1 Settings
 
-`SettingsAdapter` loads `<PackageName>.sublime-settings`, validates into
+`SettingsAdapter` loads `MarkdownGlance.sublime-settings`, validates into
 `RenderSettings` (clamping numeric ranges, falling back to defaults on type
 errors, logging one warning per bad key), registers
-`add_on_change("mdpreview", self._changed)` and clears it in
+`add_on_change("mdglance", self._changed)` and clears it in
 `plugin_unloaded()`.
 
 Change classification: `{update_delay_ms, debug_logging}` → no rerender;
@@ -1303,7 +1306,7 @@ def plugin_unloaded():
 | --- | --- | --- | --- |
 | `tests/unit` | CPython 3.8 **and** 3.14 (both required in CI), `python -m unittest` | none (pure modules) | PRD §12.1 items; every module in `domain`, `renderer`, `assets`, `application` |
 | `tests/state` | CPython | `FakeBackend`, `FakeClock`, `ImmediateExecutor`/`ManualExecutor`, `FakeResolver`, `FakeWindow` | PRD §12.2 matrix; generation ordering via `ManualExecutor.complete(i)` in arbitrary order |
-| `tests/contract` | inside ST via `mdpreview_run_contract_tests` command | real API, `FakeResolver` (no network) | backend contract: create/update/navigate/move/reveal (incl. populated-group case)/focus/close/is_alive/live_handles/owner_of; contexts; settings detach |
+| `tests/contract` | inside ST via `mdglance_run_contract_tests` command | real API, `FakeResolver` (no network) | backend contract: create/update/navigate/move/reveal (incl. populated-group case)/focus/close/is_alive/live_handles/owner_of; contexts; settings detach |
 | Phase 0 gate scripts | inside ST | real API | PRD §14 gates 1–4; the script drives the interaction, waits the fixed 500 ms, and writes a JSON step log to `docs/adr/phase0/`; screenshots are captured by the tester or an OS-level harness at each logged step, per the PRD §7.2 protocol — Sublime's API cannot capture the screen |
 | Import-boundary test | CPython | stub `sublime` that raises | §4 rules |
 | Benchmark | inside ST, Phase 1+ | none | PRD §4.2 protocol on `benchmark-100k.md` |
@@ -1326,18 +1329,17 @@ canonical scheduler tests:
 
 ## 13. Open questions
 
-Resolved by Phase 0 or the first Phase 1 ADRs; none block starting Phase 0.
+Resolved by Phase 0 and the Phase 1 ADRs. Remaining items are verification
+notes, not design choices.
 
-1. Which window command names Sublime reports in `on_post_window_command` for
-   mouse tab close, `Ctrl+W`, close group, and close window, per OS. Every
-   path must be covered by a close trigger (§8.5); a path that is not
-   rejects Candidate A. There is no safety-net alternative.
-2. Whether minihtml honours `rem` on `<img>` `style` widths inside phantoms and
-   sheets identically; fallback is emitting `px` recomputed in `represent()`.
-3. Whether `markdown2`'s `header-ids` extra produces slugs stable enough for
-   TOC identity across edits; fallback is `toc.py` computing its own slugs
-   and rewriting heading ids in `structure.py`.
-4. Whether `bs4` survives the renderer ADR (§9.2).
-5. Whether the TOC is a separate surface or in-preview (FR-050 allows both);
-   this design supports both through `toc_surface: Optional`, but the choice
-   is constrained by the selected backend's `NavigationCapability` (§8.1).
+1. Linux close paths are resolved by Phase 0 evidence: mouse tab close and
+   `Ctrl+W` reach `on_pre_close`; `close_pane` moves the live view and window
+   close reaches `on_pre_close_window`. macOS/Windows remain future testing.
+2. ST 4200 minihtml rendered `html { font-size: 100%; }` at an unusable size;
+   production uses a 16 px root scaled in `represent()`. Image dimensions stay
+   in `rem`, so `body_html` remains zoom-independent.
+3. `structure.py` rewrites `markdown2` ids with deterministic unique slugs.
+4. ADR 0003 removes `bs4`.
+5. Candidate B uses a separate TOC surface with programmatic navigation.
+6. ADR 0006 fixes the cache budget and selects documentation-only settings
+   migration.
