@@ -1,6 +1,8 @@
 # MarkdownGlance
 
 [![CI](https://github.com/pandadolphin/MarkdownGlance/actions/workflows/markdown-glance.yml/badge.svg)](https://github.com/pandadolphin/MarkdownGlance/actions/workflows/markdown-glance.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Sublime Text](https://img.shields.io/badge/Sublime%20Text-4200%2B-orange.svg)](https://www.sublimetext.com/)
 
 Live Markdown preview for Sublime Text 4, rendered in an editor group of the
 same window — no browser, no WebView, no external process.
@@ -23,6 +25,13 @@ Linux, macOS and Windows.
 
 ## Installation
 
+### Package Control
+
+Open the Command Palette, run **Package Control: Install Package**, and choose
+**MarkdownGlance**.
+
+### Manually
+
 Open **Preferences → Browse Packages…** in Sublime Text and clone this
 repository into the directory it opens, under the name `MarkdownGlance`:
 
@@ -30,8 +39,8 @@ repository into the directory it opens, under the name `MarkdownGlance`:
 git clone https://github.com/pandadolphin/MarkdownGlance.git MarkdownGlance
 ```
 
-Then open a Markdown file and run **MarkdownGlance: Open Preview to the Side**
-from the Command Palette.
+Either way, open a Markdown file and run **MarkdownGlance: Open Preview to the
+Side** from the Command Palette.
 
 ## Commands
 
@@ -75,20 +84,22 @@ server. Diagnostics redact source text, paths, URLs and Mermaid payloads.
 - [Architecture decision records](docs/adr)
 - [Migrating from MarkdownLivePreview](docs/migration.md)
 - [Manual test plan](docs/manual-test-plan.md)
+- [Changelog](CHANGELOG.md)
+- [Security policy](SECURITY.md)
 
 ## Contributing
 
-Issues and pull requests are welcome. Run the tests from the parent of the
-package directory, which must be named `MarkdownGlance`:
+Issues and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers
+running the tests, trying a change inside Sublime Text, and what a pull request
+should carry. In short:
 
 ```bash
 python -m unittest discover -s MarkdownGlance/tests -t . -p 'test_*.py'
 ```
 
-CI runs the same suite on Linux, macOS and Windows against Python 3.8 — the
-Sublime Text 4200 runtime — and 3.14. A behavioural change should come with a
-test, and a decision that constrains the design belongs in a new ADR under
-`docs/adr`.
+run from the parent of the package directory, which must be named
+`MarkdownGlance`. CI runs the same suite on Linux, macOS and Windows against
+Python 3.8 — the Sublime Text 4200 runtime — and 3.14.
 
 ## Acknowledgements
 

@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest a capability for the preview.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you are trying to do that the package makes hard today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like it to do
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      description: >
+        MarkdownGlance renders with the Sublime API alone — no browser, no
+        WebView, no external process, no runtime dependency outside the standard
+        library and the vendored parser.
+      options:
+        - label: This can be built within that constraint, as far as I can tell.

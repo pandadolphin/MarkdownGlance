@@ -44,7 +44,10 @@ class PackageIdentityTest(unittest.TestCase):
         self.assertEqual(release["sublime_text"], ">=4200")
         self.assertEqual(release["platforms"], ["*"])
         self.assertIs(release["tags"], True)
-        self.assertEqual(self.load("dependencies.json")["*"][">=4200"], [])
+        self.assertEqual(metadata["labels"], ["markdown", "preview"])
+        # Package Control installs no library for this package; the absence of
+        # the file is the declaration, and an empty one is dead metadata.
+        self.assertFalse(os.path.exists(os.path.join(ROOT, "dependencies.json")))
 
     def test_public_command_and_key_context_namespaces_are_unique(self):
         commands = self.load("Default.sublime-commands")

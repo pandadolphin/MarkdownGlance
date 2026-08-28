@@ -1,6 +1,7 @@
 {
     "name": "MarkdownGlance",
     "details": "https://github.com/pandadolphin/MarkdownGlance",
+    "labels": ["markdown", "preview"],
     "releases": [
         {
             "sublime_text": ">=4200",

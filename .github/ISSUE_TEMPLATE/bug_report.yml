@@ -1,0 +1,38 @@
+name: Bug report
+description: Something in the preview behaves incorrectly.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what the preview did instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a Markdown file containing ...
+        2. Run "MarkdownGlance: Open Preview to the Side"
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: >
+        Run "MarkdownGlance: Copy Diagnostics" from the Command Palette and
+        paste the result. It carries the package version, the Sublime build and
+        the platform, and redacts source text, paths, URLs and Mermaid payloads.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Markdown that reproduces it
+      description: The smallest input that shows the problem, if there is one.
+      render: markdown
