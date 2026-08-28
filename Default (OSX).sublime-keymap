@@ -15,13 +15,13 @@
         "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]
     },
     {
-        "keys": ["super+="],
+        "keys": ["super+equals"],
         "command": "mdglance_zoom",
         "args": {"delta": 0.1},
         "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]
     },
     {
-        "keys": ["super+-"],
+        "keys": ["super+minus"],
         "command": "mdglance_zoom",
         "args": {"delta": -0.1},
         "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]
