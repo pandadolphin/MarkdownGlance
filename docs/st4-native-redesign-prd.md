@@ -5,7 +5,8 @@
 - 本项目将从零实现 ST4 orchestration 和 session model；现有 renderer、image logic、tests 与 fixtures 作为可继承并重构的资产，不做无收益的 clean-room rewrite（见 [2. Product decision](#2-product-decision)）。
 - presentation backend 尚未决定。Phase 0 将比较 Candidate A `HtmlSheet` 与 Candidate B scratch `View` + `PhantomSet`；若 `HtmlSheet` 无法同时满足 live update scroll retention 和 TOC navigation，则 Candidate A 整体淘汰，不做功能降级式 fallback（见 [7. Proposed architecture and backend decision](#7-proposed-architecture-and-backend-decision) 与 [14. Delivery plan](#14-delivery-plan)）。
 - 首个正式版本保留 Side-by-Side、Full Screen、live update、theme-aware styling、remote/local images、TOC、zoom 和 Mermaid；Mermaid 默认仍通过 remote service render，不宣称 offline 或内置 JavaScript rendering（见 [6. Functional requirements](#6-functional-requirements)）。
-- 目标 host 为当前 stable build 4200（Python 3.8 runtime），`.python-version` 使用 `3.8`；代码按 Python 3.8 兼容编写，同时主动在 dev build 4205+ 的 Python 3.14 runtime（当前 dev 4207，4206 起为 3.14.6）上测试，保证升级后无需改动（见 [11. Compatibility and dependencies](#11-compatibility-and-dependencies)）。
+- 目标与唯一 release gate 为当前 stable build 4200（Python 3.8 runtime），`.python-version` 使用 `3.8`；CPython 3.14 CI 与 dev build 4205+ testing 只作为 non-blocking forward compatibility evidence（见 [11. Compatibility and dependencies](#11-compatibility-and-dependencies)）。
+- 当前 required platform 仅为 Linux；macOS/Windows compatibility testing 延后，不阻塞 Phase 0、implementation 或首个 release（见 [4.2](#42-success-measures)、[11.1](#111-baseline)、[12.4](#124-manual-release-matrix)）。
 - Phase 0 是 backend 决策实验，不是对 `HtmlSheet` 路线的单向验证；其结果必须形成 ADR 后才能开始 production presentation code（见 [14. Delivery plan](#14-delivery-plan)）。
 - 现有主要结构性问题位于 `MarkdownLivePreview.py` 的 window/view lifecycle、全局 mutable registries 和 layout restoration，以及 `markdown2html.py` 的 render、network、image cache 与 HTML post-processing 耦合（见 [3. Problem statement](#3-problem-statement)）。
 
@@ -45,10 +46,9 @@ The implementation boundary is:
 - Git history and the MIT license remain available for provenance even when the
   new package lives in a new repository.
 
-The final product name is intentionally undecided. `Markdown Preview Enhanced`
-must not be used because that name already identifies an unrelated Atom/VS Code
-project. The selected name must be unique in Package Control and must become the
-package directory name.
+The final product and package name is `MarkdownGlance` (ADR 0002). `Markdown
+Preview Enhanced` must not be used because that name already identifies an
+unrelated Atom/VS Code project. `MarkdownGlance` is the package directory name.
 
 ## 3. Problem statement
 
@@ -106,7 +106,7 @@ features.
 | Session cleanup | 100% of closed preview/source sessions removed from the registry |
 | Offline baseline | Plain Markdown, local images, TOC, styling, and zoom remain usable without network |
 | Automated coverage | Required renderer fixture matrix and every enumerated session transition pass; core coverage is reported, not used as a substitute for behavior tests |
-| Supported platforms | Linux, macOS, and Windows on the declared minimum ST4 build |
+| Required platform | Linux on the declared minimum ST4 build; macOS and Windows are deferred future testing |
 | Manual release gate | Saved/unsaved buffers, both preview modes, light/dark schemes, images, TOC, and Mermaid checked |
 
 The performance fixture is committed as `tests/fixtures/benchmark-100k.md`. It
@@ -325,7 +325,7 @@ The first release exposes:
 ```json
 {
     "update_delay_ms": 100,
-    "enable_mermaid": true,
+    "enable_mermaid": false,
     "mermaid_server": "https://mermaid.ink",
     "allow_insecure_remote_images": false,
     "remote_timeout_seconds": 15,
@@ -497,14 +497,14 @@ the stored measurements.
 ### 7.3 Proposed package layout
 
 ```text
-<PackageName>/
+MarkdownGlance/
 ├── .python-version
 ├── plugin.py
 ├── Default (Linux).sublime-keymap
 ├── Default (OSX).sublime-keymap
 ├── Default (Windows).sublime-keymap
 ├── Default.sublime-commands
-├── <PackageName>.sublime-settings
+├── MarkdownGlance.sublime-settings
 ├── preview/
 │   ├── application/
 │   │   ├── commands.py
@@ -538,8 +538,7 @@ the stored measurements.
     └── manual-test-plan.md
 ```
 
-The exact package name replaces `<PackageName>` after the naming decision. The
-unselected backend prototype is removed from the release package after the ADR;
+The unselected backend prototype is removed from the release package after the ADR;
 the interface and its contract tests remain.
 
 ### 7.4 Core data contracts
@@ -686,9 +685,9 @@ cache limits must be explicit constants or settings.
 
 ### 11.1 Baseline
 
-**Target host: Sublime Text build 4200 (current stable). Python baseline: 3.8.
-Code is written to be Python 3.8-compatible and is actively tested on Python
-3.14 so that it runs cleanly on build 4205+ without change.**
+**Target and release-gate host: Sublime Text build 4200 (current stable).
+Python baseline: 3.8. CPython 3.14 CI and dev-build testing are non-blocking
+forward-compatibility evidence.**
 
 Situation at the time of this PRD:
 
@@ -709,10 +708,10 @@ Therefore:
   `cgi`, `collections` ABC aliases, `unittest` deprecated aliases,
   `datetime.utcnow()`), and unit tests run on both interpreters in CI;
 - Package Control compatibility is declared as `"sublime_text": ">=4200"`;
-- the release gate runs on build 4200/Python 3.8 on Linux, macOS, and Windows;
-- the forward-compatibility gate runs on the newest dev build (4207 at the
-  time of this PRD)/Python 3.14.6 on at least one platform, and is a
-  release blocker, not advisory;
+- the release gate runs on build 4200/Python 3.8 on Linux; macOS and Windows
+  compatibility testing is deferred and is not a release blocker;
+- CPython 3.14 CI is required as non-blocking forward-compatibility evidence;
+  testing on the newest dev build is desirable but is not a release gate;
 - Phase 1 verifies every retained dependency (`markdown2`, and `bs4` if kept)
   imports and passes its tests on both runtimes.
 
@@ -787,8 +786,8 @@ for a failed P0 contract by changing the product requirement.
 
 | Area | Cases |
 | --- | --- |
-| Platform | Linux, macOS, Windows |
-| Sublime build/runtime | 4200/Python 3.8 release gate (all platforms); newest dev build (4207+)/Python 3.14.6 forward gate (at least one platform) |
+| Platform | Linux required; macOS and Windows deferred future testing |
+| Sublime build/runtime | Linux: 4200/Python 3.8 release gate; newest dev/Python 3.14 testing is non-blocking forward evidence |
 | Theme | Default light, default dark, one third-party color scheme |
 | Buffer | Saved, unsaved, Save As, renamed, deleted on disk |
 | Mode | Side-by-Side, Full Screen, repeated toggle, mode switch |
@@ -859,8 +858,8 @@ fallback. Production presentation code cannot begin until the ADR is approved.
 - Wrap the selected backend behind the production interface and port its Phase 0
   contract tests.
 - Import or refactor characterized renderer/image assets selected by their ADR.
-- Verify retained dependencies on build 4200/Python 3.8 and the newest dev
-  build/Python 3.14.
+- Verify retained dependencies on build 4200/Python 3.8. Run CPython 3.14 CI;
+  newest-dev integration testing is non-blocking.
 - Run the §4.2 benchmark only for the selected backend and record the baseline.
 
 Exit gate: deterministic offline render tests and the selected backend's real ST4
@@ -912,8 +911,10 @@ The first public release is acceptable only when:
 - Latest-generation enforcement is covered by deterministic tests.
 - Package unload leaves no executor, settings callback, session, or owned
   presentation surface registered.
-- Linux, macOS, and Windows smoke tests pass on stable build 4200/Python 3.8.
-- The forward-compatibility suite passes on the newest dev build/Python 3.14.
+- Linux smoke tests pass on stable build 4200/Python 3.8; macOS and Windows are
+  deferred future testing and do not block release.
+- CPython 3.14 unit tests pass as non-blocking forward-compatibility evidence;
+  newest-dev GUI testing is not required for release.
 - Unit tests pass on CPython 3.8 and 3.14 in CI.
 - Package Control metadata declares `"sublime_text": ">=4200"`.
 - README, settings, install message, license, attribution, privacy text, and
@@ -928,7 +929,7 @@ The first public release is acceptable only when:
 | `HtmlSheet` fails live-update scroll or TOC navigation | Candidate A cannot satisfy P0 | Reject Candidate A and select the phantom backend; do not weaken P0 |
 | User-closing an `HtmlSheet` has no documented `View` close event | Session or layout state may leak | Candidate A must prove bounded reconciliation or be rejected for lifecycle failure |
 | Phantom backend retains scratch-view and rendering constraints | UI chrome, flicker, or large-document defects | Backend contract, chrome suppression, large fixture, and viewport regression tests |
-| A dependency or our code fails on Python 3.14 | Package breaks the day a stable build ships 3.14 | Dual-interpreter CI for unit tests; dev-build forward gate is a release blocker; `bs4` is the only non-stdlib candidate besides `markdown2` |
+| A dependency or our code fails on Python 3.14 | Package may need work when a future stable build ships 3.14 | Dual-interpreter CI provides early non-blocking evidence; stable build 4200 remains the release gate |
 | 3.8-only idioms creep in that 3.14 rejects, or vice versa | Same as above | Lint rule set: no `from __future__ import annotations`-dependent tricks, no removed-module imports; the dual CI catches the rest |
 | minihtml lacks required HTML/CSS | Output differs from browser Markdown | Maintain a minihtml-specific presenter and compatibility fixtures |
 | Remote Mermaid exposes private source | Privacy and trust failure | Explicit disclosure, disable setting, configurable server, code fallback |
@@ -939,18 +940,19 @@ The first public release is acceptable only when:
 
 ## 17. Open decisions
 
-These decisions block implementation beyond Phase 0:
+Decision status for implementation beyond Phase 0:
 
-1. Final product and package name.
-2. Presentation backend selected by the Phase 0 ADR.
-3. Markdown parser and exact dialect, including which current renderer assets are
-   retained.
-4. Whether Mermaid is enabled by default after privacy review.
+1. Final product and package name: resolved by ADR 0002 (`MarkdownGlance`).
+2. Presentation backend: resolved by ADR 0001 (scratch `View` + `PhantomSet`).
+3. Markdown parser and exact dialect: resolved by ADR 0003 (`markdown2` 2.3.9,
+   no `bs4`).
+4. Mermaid default/privacy: resolved by ADR 0005 (disabled by default).
 5. Whether zoom is per session, per source, per window, or global after the first
    release; the initial requirement selects per session.
-6. Cache memory budget and maximum remote image dimensions.
-7. Whether migration tooling should copy compatible settings from the old
-   package or documentation alone is sufficient.
+6. Cache limits: resolved by ADR 0006 (64 MiB in-memory LRU, 30-second negative
+   TTL, 10 MiB/4096 px remote defaults).
+7. Settings migration: resolved by ADR 0006 (documentation only; no automatic
+   copying while the packages coexist).
 
 ## 18. References
 

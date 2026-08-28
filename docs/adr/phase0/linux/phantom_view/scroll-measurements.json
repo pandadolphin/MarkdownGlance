@@ -1,0 +1,22 @@
+{
+  "anchor": "SCROLL-ANCHOR-100",
+  "anchor_y_pixels": [
+    [327, 346],
+    [327, 346],
+    [327, 346],
+    [327, 346],
+    [327, 346],
+    [327, 346],
+    [327, 346],
+    [327, 346],
+    [327, 346],
+    [327, 346],
+    [327, 346]
+  ],
+  "backend": "phantom_view",
+  "maximum_top_edge_delta_pixels": 0,
+  "os_scaling_percent": 100,
+  "settle_ms": 500,
+  "sublime_build": 4200,
+  "window_logical_pixels": [1280, 900]
+}

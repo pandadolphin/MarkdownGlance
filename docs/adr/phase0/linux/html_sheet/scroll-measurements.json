@@ -1,0 +1,19 @@
+{
+  "anchor": "SCROLL-ANCHOR-100",
+  "captures": [
+    {"file": "scroll-00.png", "top": 656, "bottom": 675},
+    {"file": "scroll-01.png", "top": 656, "bottom": 675},
+    {"file": "scroll-02.png", "top": 656, "bottom": 675},
+    {"file": "scroll-03.png", "top": 656, "bottom": 675},
+    {"file": "scroll-04.png", "top": 656, "bottom": 675},
+    {"file": "scroll-05.png", "top": 656, "bottom": 675},
+    {"file": "scroll-06.png", "top": 656, "bottom": 675},
+    {"file": "scroll-07.png", "top": 656, "bottom": 675},
+    {"file": "scroll-08.png", "top": 656, "bottom": 675},
+    {"file": "scroll-09.png", "top": 656, "bottom": 675},
+    {"file": "scroll-10.png", "top": 656, "bottom": 675}
+  ],
+  "maximum_top_edge_delta_pixels": 0,
+  "pixel_identical": true,
+  "settle_ms": 500
+}
