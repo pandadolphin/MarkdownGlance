@@ -12,6 +12,7 @@ from ..application.session_manager import SessionManager
 from ..application.usecases import UseCases
 from ..assets import AssetCache, AssetResolver, ImageFetcher, NetworkPolicy
 from ..domain.contracts import RenderRequest
+from ..domain.paths import HOST
 from ..presentation.layout import LayoutOwner
 from ..presentation.phantom_view import PhantomViewBackend
 from .clock import SublimeClock
@@ -116,7 +117,7 @@ class Container:
         session.base_path = (
             os.path.dirname(source.file_name())
             if source.file_name()
-            else os.path.realpath(folders[0]) if folders else None
+            else HOST.normalise(folders[0]) if folders else None
         )
         session.theme = theme_snapshot(source)
         session.settings = self.settings.get()

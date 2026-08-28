@@ -1,6 +1,5 @@
 import base64
 import io
-import os.path
 import threading
 from concurrent.futures import Executor
 from typing import Callable, Dict, Iterable, Sequence, Set
@@ -15,6 +14,7 @@ from ..domain.contracts import (
     Pending,
     Ready,
 )
+from ..domain.paths import HOST
 from .cache import AssetCache
 from .fetcher import ImageFetcher
 from .images import InvalidImage, detect
@@ -109,7 +109,7 @@ class AssetResolver:
 
     def _read_local(self, key: AssetKey, policy: NetworkPolicy) -> AssetResult:
         settings = policy.settings
-        if not os.path.isabs(key.locator):
+        if not HOST.is_absolute(key.locator):
             return Failed(AssetStatus.UNAVAILABLE)
         try:
             with open(key.locator, "rb") as handle:

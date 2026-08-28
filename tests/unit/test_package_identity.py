@@ -1,9 +1,25 @@
 import ast
+import copy
 import json
 import os
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+BINDINGS = ("sublime-keymap", "sublime-mousemap")
+PLATFORMS = ("Linux", "OSX", "Windows")
+
+
+def as_macos(bindings):
+    macos = copy.deepcopy(bindings)
+    for item in macos:
+        item["keys"] = [key.replace("ctrl+", "super+") for key in item.get("keys", ())]
+        item["modifiers"] = [
+            modifier.replace("ctrl", "super") for modifier in item.get("modifiers", ())
+        ]
+        for name in ("keys", "modifiers"):
+            if not item[name]:
+                del item[name]
+    return macos
 
 
 class PackageIdentityTest(unittest.TestCase):
@@ -25,12 +41,25 @@ class PackageIdentityTest(unittest.TestCase):
         self.assertTrue(
             all(item["command"].startswith("mdglance_") for item in commands)
         )
-        keymap = self.load("Default (Linux).sublime-keymap")
-        self.assertTrue(all(item["command"].startswith("mdglance_") for item in keymap))
-        for item in keymap:
-            for context in item.get("context", ()):
-                self.assertTrue(context["key"].startswith("mdglance."))
-                self.assertIs(context["operand"], True)
+        for platform in PLATFORMS:
+            for suffix in BINDINGS:
+                name = "Default ({}).{}".format(platform, suffix)
+                for item in self.load(name):
+                    self.assertTrue(item["command"].startswith("mdglance_"), name)
+                    for context in item.get("context", ()):
+                        self.assertTrue(context["key"].startswith("mdglance."), name)
+                        self.assertIs(context["operand"], True)
+
+    def test_platform_bindings_differ_only_by_the_macos_command_key(self):
+        for suffix in BINDINGS:
+            linux = self.load("Default (Linux).{}".format(suffix))
+            self.assertNotEqual(as_macos(linux), linux, suffix)
+            self.assertEqual(
+                self.load("Default (Windows).{}".format(suffix)), linux, suffix
+            )
+            self.assertEqual(
+                self.load("Default (OSX).{}".format(suffix)), as_macos(linux), suffix
+            )
 
     def test_runtime_selector_is_python_38_compatible(self):
         with open(os.path.join(ROOT, ".python-version"), encoding="ascii") as source:

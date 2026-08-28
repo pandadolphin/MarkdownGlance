@@ -18,6 +18,9 @@ from MarkdownGlance.preview.renderer import parse, serialise
 from MarkdownGlance.preview.renderer.stylesheet import represent
 from MarkdownGlance.preview.renderer.toc import build_toc
 
+# A base path that is absolute on every host, so the suite runs from any of them.
+BASE_PATH = os.path.realpath(os.path.abspath(os.sep + "mdglance"))
+
 
 class FakeResolver:
     def __init__(self, result=None):
@@ -32,7 +35,7 @@ def request(markdown, zoom=1.0, settings=None, token="opaque-token"):
         "session",
         7,
         markdown,
-        "/tmp",
+        BASE_PATH,
         zoom,
         settings or RenderSettings(),
         ThemeSnapshot(),
@@ -140,7 +143,10 @@ Unicode: 中文 café 😀
 
     def test_local_image_url_is_decoded_canonical_and_not_a_network_path(self):
         local = parse(request("![x](images/a%20b.png?ignored=1#fragment)"))
-        self.assertEqual(local.asset_keys[0].locator, "/tmp/images/a b.png")
+        self.assertEqual(
+            local.asset_keys[0].locator,
+            os.path.join(BASE_PATH, "images", "a b.png"),
+        )
         network_path = parse(request("![x](//server/share/image.png)"))
         self.assertEqual(network_path.asset_keys, ())
 

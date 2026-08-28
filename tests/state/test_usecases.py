@@ -1,4 +1,7 @@
+import os
+import os.path
 import unittest
+from unittest import mock
 
 from MarkdownGlance.preview.application.ports import SurfaceHandle
 from MarkdownGlance.preview.application.session_manager import SessionManager
@@ -10,6 +13,11 @@ from MarkdownGlance.preview.domain.contracts import (
     RenderSettings,
     ThemeSnapshot,
 )
+
+# Paths that are absolute on every host, so the suite runs from any of them.
+BASE = os.path.realpath(os.path.abspath(os.sep + "mdglance"))
+OUTSIDE = os.path.abspath(os.sep + "mdglance-outside")
+HOME = os.path.abspath(os.sep + "mdglance-home")
 
 
 class Sheet:
@@ -181,7 +189,7 @@ class Resolver:
 
 class UseCasesTest(unittest.TestCase):
     def setUp(self):
-        self.source = View(10, filename="/tmp/source.md")
+        self.source = View(10, filename=os.path.join(BASE, "source.md"))
         self.window = Window(1, self.source)
         self.windows = {1: self.window}
         self.backend = Backend(self.windows)
@@ -229,15 +237,15 @@ class UseCasesTest(unittest.TestCase):
 
     def test_saved_unsaved_and_zoom_paths(self):
         unsaved = View(20, name="Untitled", filename=None)
-        second = Window(2, unsaved, ("/tmp/project",))
+        second = Window(2, unsaved, (os.path.join(BASE, "project"),))
         self.windows[2] = second
         self.usecases.open_side_by_side(second)
         session = self.manager.for_source(2, 20)
-        self.assertEqual(session.base_path, "/tmp/project")
+        self.assertEqual(session.base_path, os.path.join(BASE, "project"))
         self.usecases.source_modified(unsaved)
-        unsaved._filename = "/tmp/saved.md"
+        unsaved._filename = os.path.join(BASE, "saved.md")
         self.usecases.source_saved(unsaved)
-        self.assertEqual(session.base_path, "/tmp")
+        self.assertEqual(session.base_path, BASE)
         reasons = [
             reason for sid, reason in self.scheduler.requests if sid == session.id
         ]
@@ -250,9 +258,13 @@ class UseCasesTest(unittest.TestCase):
     def test_absolute_editor_link_is_rejected(self):
         self.usecases.open_side_by_side(self.window)
         session = self.manager.for_source(1, 10)
-        session.last_document = PreviewDocument(1, "", (), (), (), ("/etc/passwd",))
+        session.last_document = PreviewDocument(
+            1, "", (), (), (), (OUTSIDE, "~/secret")
+        )
         self.window._active = Sheet(session.preview_surface.id, None)
-        self.usecases.open_relative(self.window, session.action_token, 0)
+        with mock.patch.dict(os.environ, {"HOME": HOME, "USERPROFILE": HOME}):
+            for index in (0, 1):
+                self.usecases.open_relative(self.window, session.action_token, index)
         self.assertEqual(self.window.opened, [])
 
     def test_toc_navigation_uses_action_token_not_active_sheet(self):
@@ -267,7 +279,7 @@ class UseCasesTest(unittest.TestCase):
             (),
         )
 
-        second_source = View(20, filename="/tmp/second.md")
+        second_source = View(20, filename=os.path.join(BASE, "second.md"))
         second_source._window = self.window
         self.usecases.open_side_by_side(self.window, second_source)
         second = self.manager.for_source(1, 20)

@@ -1,4 +1,3 @@
-import os.path
 import re
 import unicodedata
 from html.parser import HTMLParser
@@ -6,6 +5,7 @@ from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 from urllib.parse import unquote, urlsplit, urlunsplit
 
 from ..domain.contracts import AssetKey, AssetKind, Heading, RenderRequest
+from ..domain.paths import HOST
 from .markdown_engine import DEFAULT_ENGINE, MarkdownEngine
 from .model import ElementNode, Node, StructuredDoc, TextNode
 
@@ -112,19 +112,17 @@ def _asset_key(source: str, request: RenderRequest) -> Optional[AssetKey]:
     if parsed.scheme == "file":
         if parsed.netloc not in ("", "localhost"):
             return None
-        return AssetKey(AssetKind.LOCAL_IMAGE, os.path.realpath(unquote(parsed.path)))
+        return AssetKey(AssetKind.LOCAL_IMAGE, HOST.normalise(unquote(parsed.path)))
     if parsed.scheme or source.startswith("data:"):
         return None
     if parsed.netloc:
         return None
     local_source = unquote(parsed.path)
     if request.base_path is None:
-        return AssetKey(AssetKind.LOCAL_IMAGE, local_source)
+        return AssetKey(AssetKind.LOCAL_IMAGE, HOST.expand(local_source))
     return AssetKey(
         AssetKind.LOCAL_IMAGE,
-        os.path.realpath(
-            os.path.expanduser(os.path.join(request.base_path, local_source))
-        ),
+        HOST.resolve(request.base_path, local_source),
     )
 
 
