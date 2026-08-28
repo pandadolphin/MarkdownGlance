@@ -37,12 +37,12 @@ class PackageIdentityTest(unittest.TestCase):
         with open(os.path.join(ROOT, name), encoding="utf-8") as source:
             return json.load(source)
 
-    def test_metadata_is_linux_st4200_and_dependency_free(self):
+    def test_metadata_is_st4200_every_platform_and_dependency_free(self):
         metadata = self.load("docs/package-control-entry.json")
         self.assertEqual(metadata["name"], "MarkdownGlance")
         release = metadata["releases"][0]
         self.assertEqual(release["sublime_text"], ">=4200")
-        self.assertEqual(release["platforms"], ["linux"])
+        self.assertEqual(release["platforms"], ["*"])
         self.assertIs(release["tags"], True)
         self.assertEqual(self.load("dependencies.json")["*"][">=4200"], [])
 

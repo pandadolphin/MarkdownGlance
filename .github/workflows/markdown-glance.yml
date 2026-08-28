@@ -16,7 +16,7 @@ jobs:
         python-version: ["3.8", "3.14"]
         exclude:
           # macOS runners are arm64 and setup-python publishes no 3.8 build for
-          # them. The release gate is Linux/3.8, so macOS covers 3.14 only.
+          # them, so macOS covers 3.14 only. Linux and Windows cover 3.8.
           - os: macos-latest
             python-version: "3.8"
     steps:

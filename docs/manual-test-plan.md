@@ -2,9 +2,9 @@
 
 ## Matrix
 
-Run the release matrix on Linux with Sublime Text build 4200/Python 3.8. The
-newest available dev build/Python 3.14, macOS and Windows are optional future
-compatibility testing.
+Run the release matrix on Linux, macOS and Windows with Sublime Text build
+4200/Python 3.8. The newest available dev build/Python 3.14 is optional
+forward-compatibility testing.
 
 1. Open saved and unsaved Markdown in Side-by-Side and Full Screen; repeat open
    and toggles from source, preview and TOC focus.

@@ -17,21 +17,17 @@ same window — no browser, no WebView, no external process.
 
 ## Requirements
 
-- Sublime Text build 4200 or newer
-- Linux
-
-The package has no external Python dependency. It loads on macOS and Windows
-and the automated suite is green there, but the manual release matrix has only
-been run on Linux, so those platforms are untested rather than supported.
+Sublime Text build 4200 or newer — that is the whole list. The package is pure
+Python over the Sublime API, with no external dependency, and it is used on
+Linux, macOS and Windows.
 
 ## Installation
 
-Clone this repository into your Sublime Text `Packages` directory under the
-name `MarkdownGlance`:
+Open **Preferences → Browse Packages…** in Sublime Text and clone this
+repository into the directory it opens, under the name `MarkdownGlance`:
 
 ```bash
-git clone https://github.com/pandadolphin/MarkdownGlance.git \
-  "$HOME/.config/sublime-text/Packages/MarkdownGlance"
+git clone https://github.com/pandadolphin/MarkdownGlance.git MarkdownGlance
 ```
 
 Then open a Markdown file and run **MarkdownGlance: Open Preview to the Side**
