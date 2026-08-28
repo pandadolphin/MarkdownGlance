@@ -1,11 +1,5 @@
 # ADR 0004: Renderer reuse boundary
 
-## 中文摘要
-
-- 保留 `markdown2`、base CSS、PNG/GIF/JPEG header detection、Mermaid payload encoding 与现有 regression fixtures。
-- 重写 lifecycle、TOC string surgery、image/network globals、cache 与 HTML serialization；production package 不包含 Candidate A 或 `bs4`。
-- 所有 retained third-party code 继续使用原 MIT attribution；network 与 renderer executor 完全分离。
-
 ## Status
 
 Accepted.

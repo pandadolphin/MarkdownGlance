@@ -1,11 +1,5 @@
 # ADR 0002: Product and package name
 
-## 中文摘要
-
-- 最终 product/package name 为 **MarkdownGlance**；package directory、settings filename、repository 与 public name 保持一致。
-- Production command、context、setting、phantom 与 thread namespace 使用短前缀 `mdglance`，与现有 `MarkdownLivePreview` 共存。
-- 2026-08-28 collision check 未发现同名 Package Control package、GitHub repository、npm package 或 VS Code Marketplace result。
-
 ## Status
 
 Accepted.

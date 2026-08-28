@@ -1,11 +1,5 @@
 # Migrating from MarkdownLivePreview
 
-## 中文摘要
-
-- 两个 packages 可同时安装，但默认 preview shortcuts 重叠；migration 期间需 disable 一方 key bindings 或自定义 shortcuts。
-- 不自动复制 settings。`toc_minimum_length` 可直接迁移；network 与 Mermaid settings 应按新的 privacy defaults 手动确认。
-- 新 Side-by-Side 模式使用 source window 内的 editor groups，不再创建独立 preview window。
-
 Install MarkdownGlance beside MarkdownLivePreview, then invoke commands from the
 Command Palette while evaluating it. Public identifiers, settings files,
 resources and Python modules do not collide. The default shortcuts do collide,

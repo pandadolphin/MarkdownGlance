@@ -1,11 +1,5 @@
 # MarkdownGlance architecture
 
-## 中文摘要
-
-- production backend 为 scratch `View` + `PhantomSet`；`adapter/` 与 `presentation/` 是唯一可 import `sublime` 的 layers。
-- 每个 source buffer 对应一个 session；每 session 只允许一个 in-flight render，generation check 保证 stale completion 不会覆盖新内容。
-- renderer 为 pure `parse -> resolve -> serialise` pipeline；network 使用独立 bounded executor，callback 先回 UI thread 再更新 session。
-
 ## Boundaries
 
 `adapter` translates Sublime commands and events into use cases. `application`

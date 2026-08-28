@@ -1,21 +1,5 @@
 # ST4-Native Markdown Preview — Detailed Design
 
-## 中文摘要
-
-- 本文是 [`st4-native-redesign-prd.md`](st4-native-redesign-prd.md) 的实现设计，覆盖 module 划分、核心接口、session 状态机、generation 调度、asset service、renderer 复用边界、backend 契约以及 Phase 0 prototype 的具体做法。产品需求与 gate 定义以 PRD 为准，本文不重复。
-- 当前 required platform 仅为 Linux；macOS/Windows compatibility testing 延后到 future testing，不阻塞 Phase 0、implementation 或首个 release（见 [1. Scope and status](#1-scope-and-status)）。
-- 全部 Sublime API 调用被限制在 `adapter/` 和 `presentation/` 两层；`application/`、`domain/`、`renderer/`、`assets/` 不 import `sublime`，可用 CPython 3.8 与 3.14 直接跑测试（CI 两者都跑）（见 [3. Module layout](#3-module-layout)、[4. Dependency rules](#4-dependency-rules)）。
-- 并发模型：每个 session 一个单调递增的 `generation`；render 与 network 分别使用 bounded `ThreadPoolExecutor`；所有结果回到 UI 线程后先比对 `generation` 再 apply。stale 结果、已关闭 session 的回调全部丢弃（见 [6. Scheduler and generations](#6-scheduler-and-generations)）。
-- `PresentationBackend` 是唯一与 preview surface 交互的接口，两个候选（`HtmlSheet` / scratch `View` + `PhantomSet`）各实现一份；Phase 0 用同一套 contract test 与 gate 脚本对比后由 ADR 选定一个（见 [8. Presentation backend](#8-presentation-backend)）。
-- renderer 拆分为三段：`markdown2` 转换 → HTML 结构化（headings、images、mermaid、pre 修复）→ minihtml 序列化；网络与缓存从 `markdown2html.py` 移入 `assets/`，renderer 只声明依赖、不发请求（见 [9. Renderer](#9-renderer)、[10. Asset service](#10-asset-service)）。
-- layout ownership 在 window 级别：`LayoutOwner` 按 group 记录 `previous_layout`、fingerprint 与 holder 集合，最后一个 holder 关闭且 fingerprint 未变时才恢复；session 可持有 preview 与 TOC 两个 group（`layout_groups`），释放顺序固定为从右到左，close cause 矩阵决定是否 restore（见 [6.4](#64-closing)、[7.4 Layout ownership](#74-layout-ownership)）。
-- close detection 区分 close trigger 与 safety-net trigger：cleanup 与 layout 恢复必须由 close 动作本身触发；`on_activated` 等只用于对账，不算通过 gate。Candidate A 的 navigation 只接受保留完整 document 的机制，"anchored window" 截断方案明确不算通过（见 [8.2](#82-candidate-a--htmlsheet)、[8.5](#85-reconciliation)）。
-- scheduler 每 session 最多一个 in-flight render；in-flight 期间的新 edit 只抬高 `requested_generation`，完成后以 `completed_generation`（成败都前进）为依据立即 dispatch 最新一代，既保证最后一次 edit 必定被渲染，也避免失败的最新一代无限重试（见 [6.2](#62-generation-lifecycle)）。
-- renderer 拆为 `parse`（pure）→ `resolver.resolve`（唯一副作用步，`RLock` 保护，网络完成回调先 marshal 到 UI 线程）→ `serialise`（pure）；`pending_assets` 由 resolver 的返回值推导（见 [9.1](#91-pipeline)、[10.1](#101-resolver)）。
-- navigation：Candidate B 沿用现有 ratio × `layout_extent()` 方案；Candidate A 没有任何 API 能定位 `HtmlSheet`，只可能以 in-preview TOC + fragment link 形式通过 gate 2，即 A 与 separate TOC sheet 互斥，需写入 ADR（见 [8.2](#82-candidate-a--htmlsheet)、[8.3](#83-candidate-b--scratch-view--phantomset)）。
-- diagnostics/log 只允许出现 `AssetKey.safe_label`（host/basename + hash），Mermaid URL 的 path 含 diagram 源码，任何模式下都不记录（见 [5](#5-domain-contracts)、[10.2](#102-fetcher)）。
-- 已解决的 implementation gates：ADR 0001 选择 scratch `View` + `PhantomSet`，ADR 0003 删除 `bs4`，ADR 0005 将 Mermaid 设为 opt-in；Linux/ST 4200 证明 minihtml root zoom 必须使用 `px`，preview `View` 必须启用 `word_wrap`。
-
 ## 1. Scope and status
 
 | Field | Value |

@@ -1,10 +1,5 @@
 # ADR 0006: Cache limits and settings migration
 
-## 中文摘要
-
-- asset cache 使用 64 MiB in-memory LRU，negative result TTL 为 30 seconds；remote payload 上限默认 10 MiB、dimension 上限 4096 px。
-- 首个 release 只提供 migration guide，不自动复制旧 package settings，以免 coexistence 时产生隐式 coupling。
-
 ## Status
 
 Accepted.

@@ -1,15 +1,5 @@
 # ST4-Native Markdown Preview — Implementation Plan
 
-## 中文摘要
-
-- Critical path 是 `Phase 0 backend experiment → backend ADR → package/parser ADRs → pure core → session lifecycle → assets/UX → release`；在 backend ADR 获批前，不开始 production presentation code（见 [2. Delivery strategy](#2-delivery-strategy)）。
-- Phase 0 必须用同一 fixture 和 interaction script 比较 `HtmlSheet` 与 scratch `View` + `PhantomSet`。`HtmlSheet` 的 scroll retention、preview TOC navigation、close detection、focused-preview mode switch 任一失败，就选择 Candidate B，不降低 P0 要求（见 [4. Phase 0](#4-phase-0--presentation-backend-decision)）。
-- 当前 required platform 仅为 Linux；macOS/Windows matrix 延后到 future testing，不阻塞任何 phase gate 或 release（见 [4](#4-phase-0--presentation-backend-decision)、[8](#8-phase-4--mermaid-diagnostics-and-hardening)）。
-- Phase 1 先锁定 package name、Markdown dialect、dependency/reuse boundary，再建立 pure domain、renderer、sanitisation 和 selected backend；现有 `markdown2html.py`、`resources/` 与 `tests/test_markdown2html.py` 只按 characterization tests 逐项迁移（见 [5. Phase 1](#5-phase-1--package-skeleton-and-pure-core)）。
-- Phase 2 实现 session、generation scheduler、layout ownership 和 commands/events；其 exit gate 是完整 lifecycle matrix 通过，且 plugin 从不 close 或 recreate source sheet（见 [6. Phase 2](#6-phase-2--session-lifecycle-and-preview-modes)）。
-- Phase 3/4 再加入 local/remote assets、theme、TOC、zoom、Mermaid、diagnostics 与 hardening；network 始终与 render executor 分离，所有 callback 在 UI thread 比对 session 和 generation 后才可 apply（见 [7](#7-phase-3--assets-styling-toc-and-zoom) 与 [8](#8-phase-4--mermaid-diagnostics-and-hardening)）。
-- 每个 work package 都有明确 tests、artifact 和 exit condition；phase gate 未通过时停止后续依赖项，不用延期的 tests 或文档债务换取“完成”（见 [3. Definition of done](#3-definition-of-done) 与 [10. Traceability](#10-requirement-traceability)）。
-
 ## 1. Scope and inputs
 
 | Field | Value |

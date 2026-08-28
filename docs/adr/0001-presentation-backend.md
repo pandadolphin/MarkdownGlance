@@ -1,11 +1,5 @@
 # ADR 0001: Presentation backend
 
-## 中文摘要
-
-- 此 ADR 已接受：选择 scratch `View` + `PhantomSet`（Candidate B），navigation capability 为 `PROGRAMMATIC`，因此 production TOC 使用 separate surface（见 [Decision](#decision)）。
-- Linux/ST 4200 的固定 protocol 已完成。Candidate A 的 scroll retention 通过，但 full-document fragment navigation 和 focused-preview shortcut 失败；design 的 mechanical rule 因而淘汰 Candidate A（见 [Evidence](#evidence)）。
-- Candidate B 的四项 gates 均通过。macOS/Windows 仅为 future compatibility testing，不阻塞此 ADR 或 release。
-
 ## Status
 
 Accepted.

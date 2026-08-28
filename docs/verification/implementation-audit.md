@@ -1,12 +1,5 @@
 # MarkdownGlance implementation audit
 
-## 中文摘要
-
-- authoritative design 的 production scope 已实现：package identity、pure renderer、session/generation、selected backend、layout ownership、assets、TOC、zoom、settings、privacy copy 与 docs 均有 code/test evidence。
-- Linux ST 4200 contract 与 real UI smoke 通过；CPython 3.8.20/3.14 pure suites 各 56 tests 通过。ST 4207 GUI testing 因 dev build 要求 license 未执行，但按批准决定不构成 blocker。
-- 100-sample benchmark 为 p50 766.424 ms / p95 784.685 ms；高于 250 ms reference target，但 PRD 明确其不是 release gate。
-- macOS/Windows 按批准决定 deferred。完整 release manual matrix 尚未执行；本记录验证 implementation，不宣称 public release acceptance。
-
 ## Requirement verification
 
 | Area | Result | Evidence |

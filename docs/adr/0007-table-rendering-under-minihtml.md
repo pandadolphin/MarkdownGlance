@@ -1,14 +1,5 @@
 # ADR 0007: Table rendering under minihtml
 
-## 中文摘要
-
-- 启用 `markdown2` 的 `tables` extra；此前 GFM 表格原样落在 `<p>` 里，管道符照抄（`preview/renderer/markdown_engine.py`）。
-- minihtml 不实现 `<table>`，也不支持 `width`，因此 renderer 自己排版：等宽 block + U+00A0 补白做列对齐，`table/tr/td/th` 从 allowlist 移除。
-- 实测（ST 4200 / Linux / X11）：连续普通空格会被折叠、U+00A0 不会；粗体、`code`、链接在等宽字体下推进量不变。
-- 列宽预算来自 preview 实测像素宽（`View.viewport_extent()`），表格自动撑满窗格；ST 没有 resize 事件，用 500 ms 轮询，只有预算变了才重渲染。`table_max_columns`（默认 200）只是上限。
-- minihtml 把等宽推进取整到整数像素（16 px 根字号实测 10 px，而非 9.64），预算必须按 `ceil` 算，否则会溢出被回绕。
-- 含 CJK 的表用 `md-table-cjk`（`Noto Sans Mono CJK SC`，宽字形正好两倍 Latin，ambiguous 也按 2 列计）；纯 Latin 表用 DejaVu Sans Mono，ambiguous 按 1 列计。emoji 来自彩色字体，宽度可能差一点。
-
 ## Status
 
 Accepted.

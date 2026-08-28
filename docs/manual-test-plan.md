@@ -1,11 +1,5 @@
 # MarkdownGlance manual test plan
 
-## 中文摘要
-
-- release gate 仅覆盖 Linux ST 4200/Python 3.8 stable；newest dev/Python 3.14、macOS 与 Windows testing 均不阻塞 release。
-- 必测 saved/unsaved、两种 modes、三种 themes、tables、images、TOC、zoom、Mermaid、layout/lifecycle 和 coexistence。
-- 每次 run 记录 build/runtime、结果、screenshots 与 deviations；不可用的 environment 标为 blocked，不可记 pass。
-
 ## Matrix
 
 Run the release matrix on Linux with Sublime Text build 4200/Python 3.8. The

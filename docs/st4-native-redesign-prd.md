@@ -1,15 +1,5 @@
 # ST4-Native Markdown Preview Redesign PRD
 
-## 中文摘要
-
-- 本项目将从零实现 ST4 orchestration 和 session model；现有 renderer、image logic、tests 与 fixtures 作为可继承并重构的资产，不做无收益的 clean-room rewrite（见 [2. Product decision](#2-product-decision)）。
-- presentation backend 尚未决定。Phase 0 将比较 Candidate A `HtmlSheet` 与 Candidate B scratch `View` + `PhantomSet`；若 `HtmlSheet` 无法同时满足 live update scroll retention 和 TOC navigation，则 Candidate A 整体淘汰，不做功能降级式 fallback（见 [7. Proposed architecture and backend decision](#7-proposed-architecture-and-backend-decision) 与 [14. Delivery plan](#14-delivery-plan)）。
-- 首个正式版本保留 Side-by-Side、Full Screen、live update、theme-aware styling、remote/local images、TOC、zoom 和 Mermaid；Mermaid 默认仍通过 remote service render，不宣称 offline 或内置 JavaScript rendering（见 [6. Functional requirements](#6-functional-requirements)）。
-- 目标与唯一 release gate 为当前 stable build 4200（Python 3.8 runtime），`.python-version` 使用 `3.8`；CPython 3.14 CI 与 dev build 4205+ testing 只作为 non-blocking forward compatibility evidence（见 [11. Compatibility and dependencies](#11-compatibility-and-dependencies)）。
-- 当前 required platform 仅为 Linux；macOS/Windows compatibility testing 延后，不阻塞 Phase 0、implementation 或首个 release（见 [4.2](#42-success-measures)、[11.1](#111-baseline)、[12.4](#124-manual-release-matrix)）。
-- Phase 0 是 backend 决策实验，不是对 `HtmlSheet` 路线的单向验证；其结果必须形成 ADR 后才能开始 production presentation code（见 [14. Delivery plan](#14-delivery-plan)）。
-- 现有主要结构性问题位于 `MarkdownLivePreview.py` 的 window/view lifecycle、全局 mutable registries 和 layout restoration，以及 `markdown2html.py` 的 render、network、image cache 与 HTML post-processing 耦合（见 [3. Problem statement](#3-problem-statement)）。
-
 ## 1. Document status
 
 | Field | Value |
