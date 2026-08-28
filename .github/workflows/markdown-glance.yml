@@ -22,10 +22,10 @@ jobs:
     steps:
       # The package imports itself as `MarkdownGlance.preview`, so the checkout
       # directory must carry the package name and tests run from its parent.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: MarkdownGlance
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - run: python -m unittest discover -s MarkdownGlance/tests -t . -p 'test_*.py'
