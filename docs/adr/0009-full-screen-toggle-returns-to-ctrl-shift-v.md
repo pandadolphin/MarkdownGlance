@@ -40,9 +40,20 @@ the Side** stays; a bare second key does dispatch.
 
 This costs the user Paste and Indent while a Markdown source view is focused,
 and ADR 0008 is right that the narrow context aims the override rather than
-excusing it. That is the price of the binding, accepted knowingly: a shortcut
-that does not fire costs more than one that shadows a command the palette and
-`Ctrl+K, Ctrl+V` still reach. Anyone who wants Paste and Indent back in Markdown
+excusing it. That is the price of the binding, accepted knowingly, for two
+reasons beyond the dead chord.
+
+`Ctrl+Shift+V` is the key VS Code and Zed both give to the Markdown preview, and
+`ctrl+k`, `v` — already this package's Open Preview to the Side — comes from the
+same keymap. A user arriving from either editor presses the key they already
+know, and the package that does something else on it is the one that feels
+broken.
+
+And the two commands want different files. Paste and Indent earns its key where
+indentation carries meaning — Python, C++ — while what it shadows here is a
+Markdown buffer, prose whose indentation the editor has no view on. Where it
+does matter in Markdown, inside a fenced code block, plain `ctrl+v` still pastes
+and Edit → Paste and Indent still runs the command by name. Anyone who wants Paste and Indent back in Markdown
 removes one entry from **Preferences → Package Settings → MarkdownGlance → Key
 Bindings**.
 

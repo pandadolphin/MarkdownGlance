@@ -54,13 +54,27 @@ Side** from the Command Palette.
 | MarkdownGlance: Copy Diagnostics | — |
 
 On macOS, `Cmd` replaces `Ctrl`. The zoom keys apply only while the preview
-itself is focused. `Ctrl+Shift+V` is the one key the package takes from Sublime
-Text: it shadows Paste and Indent while a Markdown source view or an owned
-preview is focused, and `Ctrl+K`, `Ctrl+V` still pastes from history —
-[ADR 0009](docs/adr/0009-full-screen-toggle-returns-to-ctrl-shift-v.md) has the
-reasoning. Edit the
-defaults from **Preferences → Package Settings → MarkdownGlance → Key
-Bindings**; every command is in the command palette with or without a binding.
+itself is focused, and every command is in the command palette with or without
+a binding.
+
+### One Sublime Text default changes
+
+`Ctrl+Shift+V` is Sublime Text's **Paste and Indent**. This package takes it for
+the preview toggle, and only while a Markdown source view or a preview it owns
+is focused — everywhere else the key is untouched.
+
+That is deliberate. `Ctrl+Shift+V` is what VS Code and Zed bind their Markdown
+preview to, and `Ctrl+K`, `V` beside it comes from the same place, so the
+muscle memory is already yours. Paste and Indent, meanwhile, earns its key in
+indentation-sensitive source — Python, C++ — rather than in Markdown prose. In
+a Markdown buffer, plain `Ctrl+V` still pastes, and **Edit → Paste and Indent**
+still runs the command by name.
+
+If you would rather keep the key, delete that one entry from **Preferences →
+Package Settings → MarkdownGlance → Key Bindings** and bind the toggle
+elsewhere; `MarkdownGlance: Toggle Preview` is always in the command palette.
+[ADR 0009](docs/adr/0009-full-screen-toggle-returns-to-ctrl-shift-v.md) records
+the decision, including the chord that was tried in 0.1.2 and did not dispatch.
 
 The open and toggle commands also work while an owned preview has focus.
 Closing the source closes its preview; closing the preview never closes or

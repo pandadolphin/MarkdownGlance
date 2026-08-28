@@ -14,8 +14,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   The `Ctrl+K`, `Shift+V` chord that 0.1.2 moved it to never fired: Sublime Text
   lists it in the command palette but does not dispatch it, and its own keymap
   binds no chord whose second key is bare or shift-only. Taking the key back
-  costs Paste and Indent while a Markdown source view is focused;
-  `Ctrl+K`, `Ctrl+V` still pastes from history, and removing one entry from
+  costs Paste and Indent while a Markdown source view is focused, where
+  **Edit → Paste and Indent** still runs it by name; removing one entry from
   **Preferences → Package Settings → MarkdownGlance → Key Bindings** undoes it.
   See [ADR 0009](docs/adr/0009-full-screen-toggle-returns-to-ctrl-shift-v.md).
 
