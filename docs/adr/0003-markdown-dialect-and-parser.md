@@ -12,7 +12,7 @@ Accepted.
 
 ## Decision
 
-Vendor the existing `markdown2` 2.3.9 under `MarkdownGlance/lib/` and retain its
+Vendor the existing `markdown2` 2.3.9 under `lib/` and retain its
 MIT notice. Use exactly these extras:
 
 ```text

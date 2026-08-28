@@ -2,13 +2,15 @@ import ast
 import pathlib
 import unittest
 
-ROOT = pathlib.Path(__file__).parents[3] / "preview"
+ROOT = pathlib.Path(__file__).parents[2] / "preview"
 
 
 class ImportBoundaryTest(unittest.TestCase):
     def test_pure_layers_do_not_import_sublime(self):
         for layer in ("domain", "renderer", "assets", "application"):
-            for path in (ROOT / layer).glob("*.py"):
+            paths = list((ROOT / layer).glob("*.py"))
+            self.assertTrue(paths, str(ROOT / layer))
+            for path in paths:
                 tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
                 imports = []
                 for node in ast.walk(tree):

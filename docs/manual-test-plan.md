@@ -32,6 +32,6 @@ compatibility testing.
 
 ## Automated prerequisites
 
-Run `python -m unittest discover -s MarkdownGlance/tests -p 'test_*.py'`, Python
+Run `python -m unittest discover -s MarkdownGlance/tests -t . -p 'test_*.py'` from the parent of the `MarkdownGlance` checkout, Python
 compilation, `MarkdownGlance: Run Contract Tests`, and the 100-sample benchmark.
 Attach JSON evidence from `docs/verification/` to the release record.
