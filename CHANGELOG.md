@@ -6,6 +6,23 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The **Settings** menu item and the `Preferences: MarkdownGlance Settings`
+  palette entry now call `edit_settings` with `base_file` directly, the form
+  every other package uses, instead of routing through a package command.
+- The vendored copy of markdown2 no longer carries its command-line mainline.
+  A Sublime Text package never runs it, and it brought `optparse`, a
+  `Markdown.pl` comparison through `subprocess.Popen` and a `sys.path` insert
+  with it. Two regex literals are raw strings now, so recent Python versions
+  stop warning about invalid escape sequences. The library API is unchanged.
+
+### Removed
+
+- The `mdglance_open_settings` command. Anything bound to it should call
+  `edit_settings` with
+  `"base_file": "${packages}/MarkdownGlance/MarkdownGlance.sublime-settings"`.
+
 ## [0.1.3] - 2026-08-29
 
 ### Fixed
@@ -69,7 +86,8 @@ First public release.
 - `MarkdownGlance: Copy Diagnostics`, which redacts source text, paths, URLs
   and Mermaid payloads.
 
-[Unreleased]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.2...HEAD
+[Unreleased]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.3...HEAD
+[0.1.3]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.1...0.1.2
 [0.1.1]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/pandadolphin/MarkdownGlance/releases/tag/0.1.0

@@ -55,7 +55,9 @@ Side** from the Command Palette.
 
 On macOS, `Cmd` replaces `Ctrl`. The zoom keys apply only while the preview
 itself is focused, and every command is in the command palette with or without
-a binding.
+a binding. `Ctrl`/`Cmd` with the scroll wheel zooms too, again only over a
+focused preview; to change or drop that, bind the same button in your own
+`Packages/User/Default (<Platform>).sublime-mousemap`.
 
 ### One Sublime Text default changes
 

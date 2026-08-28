@@ -104,7 +104,6 @@ import sys
 import re
 import logging
 from hashlib import sha256
-import optparse
 from random import random, randint
 import codecs
 from collections import defaultdict
@@ -480,7 +479,7 @@ class Markdown(object):
     #                   value
     #                   conutiues over multiple lines
     _key_val_block_pat = re.compile(
-        "(.*:\s+>\n\s+[\S\s]+?)(?=\n\w+\s*:\s*\w+\n|\Z)", re.MULTILINE
+        r"(.*:\s+>\n\s+[\S\s]+?)(?=\n\w+\s*:\s*\w+\n|\Z)", re.MULTILINE
     )
     _meta_data_fence_pattern = re.compile(r"^---[\ \t]*\n", re.MULTILINE)
     _meta_data_newline = re.compile("^\n", re.MULTILINE)
@@ -2342,7 +2341,7 @@ class Markdown(object):
         text = self._naked_gt_re.sub("&gt;", text)
         return text
 
-    _incomplete_tags_re = re.compile("<(/?\w+[\s/]+?)")
+    _incomplete_tags_re = re.compile(r"<(/?\w+[\s/]+?)")
 
     def _encode_incomplete_tags(self, text):
         if self.safe_mode not in ("replace", "escape"):
@@ -2794,211 +2793,3 @@ def _html_escape_url(attr, safe_mode=False):
         escaped = escaped.replace("+", " ")
         escaped = escaped.replace("'", "&#39;")
     return escaped
-
-
-# ---- mainline
-
-
-class _NoReflowFormatter(optparse.IndentedHelpFormatter):
-    """An optparse formatter that does NOT reflow the description."""
-
-    def format_description(self, description):
-        return description or ""
-
-
-def _test():
-    import doctest
-
-    doctest.testmod()
-
-
-def main(argv=None):
-    if argv is None:
-        argv = sys.argv
-    if not logging.root.handlers:
-        logging.basicConfig()
-
-    usage = "usage: %prog [PATHS...]"
-    version = "%prog " + __version__
-    parser = optparse.OptionParser(
-        prog="markdown2",
-        usage=usage,
-        version=version,
-        description=cmdln_desc,
-        formatter=_NoReflowFormatter(),
-    )
-    parser.add_option(
-        "-v",
-        "--verbose",
-        dest="log_level",
-        action="store_const",
-        const=logging.DEBUG,
-        help="more verbose output",
-    )
-    parser.add_option("--encoding", help="specify encoding of text content")
-    parser.add_option(
-        "--html4tags",
-        action="store_true",
-        default=False,
-        help="use HTML 4 style for empty element tags",
-    )
-    parser.add_option(
-        "-s",
-        "--safe",
-        metavar="MODE",
-        dest="safe_mode",
-        help="sanitize literal HTML: 'escape' escapes "
-        "HTML meta chars, 'replace' replaces with an "
-        "[HTML_REMOVED] note",
-    )
-    parser.add_option(
-        "-x",
-        "--extras",
-        action="append",
-        help="Turn on specific extra features (not part of "
-        "the core Markdown spec). See above.",
-    )
-    parser.add_option(
-        "--use-file-vars",
-        help="Look for and use Emacs-style 'markdown-extras' "
-        "file var to turn on extras. See "
-        "<https://github.com/trentm/python-markdown2/wiki/Extras>",
-    )
-    parser.add_option("--link-patterns-file", help="path to a link pattern file")
-    parser.add_option(
-        "--self-test",
-        action="store_true",
-        help="run internal self-tests (some doctests)",
-    )
-    parser.add_option(
-        "--compare",
-        action="store_true",
-        help="run against Markdown.pl as well (for testing)",
-    )
-    parser.set_defaults(
-        log_level=logging.INFO,
-        compare=False,
-        encoding="utf-8",
-        safe_mode=None,
-        use_file_vars=False,
-    )
-    opts, paths = parser.parse_args()
-    log.setLevel(opts.log_level)
-
-    if opts.self_test:
-        return _test()
-
-    if opts.extras:
-        extras = {}
-        for s in opts.extras:
-            splitter = re.compile("[,;: ]+")
-            for e in splitter.split(s):
-                if "=" in e:
-                    ename, earg = e.split("=", 1)
-                    try:
-                        earg = int(earg)
-                    except ValueError:
-                        pass
-                else:
-                    ename, earg = e, None
-                extras[ename] = earg
-    else:
-        extras = None
-
-    if opts.link_patterns_file:
-        link_patterns = []
-        f = open(opts.link_patterns_file)
-        try:
-            for i, line in enumerate(f.readlines()):
-                if not line.strip():
-                    continue
-                if line.lstrip().startswith("#"):
-                    continue
-                try:
-                    pat, href = line.rstrip().rsplit(None, 1)
-                except ValueError:
-                    raise MarkdownError(
-                        "%s:%d: invalid link pattern line: %r"
-                        % (opts.link_patterns_file, i + 1, line)
-                    )
-                link_patterns.append((_regex_from_encoded_pattern(pat), href))
-        finally:
-            f.close()
-    else:
-        link_patterns = None
-
-    from os.path import join, dirname, abspath, exists
-
-    markdown_pl = join(dirname(dirname(abspath(__file__))), "test", "Markdown.pl")
-    if not paths:
-        paths = ["-"]
-    for path in paths:
-        if path == "-":
-            text = sys.stdin.read()
-        else:
-            fp = codecs.open(path, "r", opts.encoding)
-            text = fp.read()
-            fp.close()
-        if opts.compare:
-            from subprocess import Popen, PIPE
-
-            print("==== Markdown.pl ====")
-            p = Popen(
-                "perl %s" % markdown_pl,
-                shell=True,
-                stdin=PIPE,
-                stdout=PIPE,
-                close_fds=True,
-            )
-            p.stdin.write(text.encode("utf-8"))
-            p.stdin.close()
-            perl_html = p.stdout.read().decode("utf-8")
-            if py3:
-                sys.stdout.write(perl_html)
-            else:
-                sys.stdout.write(
-                    perl_html.encode(
-                        sys.stdout.encoding or "utf-8", "xmlcharrefreplace"
-                    )
-                )
-            print("==== markdown2.py ====")
-        html = markdown(
-            text,
-            html4tags=opts.html4tags,
-            safe_mode=opts.safe_mode,
-            extras=extras,
-            link_patterns=link_patterns,
-            use_file_vars=opts.use_file_vars,
-            cli=True,
-        )
-        if py3:
-            sys.stdout.write(html)
-        else:
-            sys.stdout.write(
-                html.encode(sys.stdout.encoding or "utf-8", "xmlcharrefreplace")
-            )
-        if extras and "toc" in extras:
-            log.debug(
-                "toc_html: "
-                + str(
-                    html.toc_html.encode(
-                        sys.stdout.encoding or "utf-8", "xmlcharrefreplace"
-                    )
-                )
-            )
-        if opts.compare:
-            test_dir = join(dirname(dirname(abspath(__file__))), "test")
-            if exists(join(test_dir, "test_markdown2.py")):
-                sys.path.insert(0, test_dir)
-                from test_markdown2 import norm_html_from_html
-
-                norm_html = norm_html_from_html(html)
-                norm_perl_html = norm_html_from_html(perl_html)
-            else:
-                norm_html = html
-                norm_perl_html = perl_html
-            print("==== match? %r ====" % (norm_perl_html == norm_html))
-
-
-if __name__ == "__main__":
-    sys.exit(main(sys.argv))

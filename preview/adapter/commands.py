@@ -72,17 +72,6 @@ class MdglanceOpenRelativeCommand(sublime_plugin.WindowCommand):
         container.usecases.open_relative(self.window, token, path)
 
 
-class MdglanceOpenSettingsCommand(sublime_plugin.WindowCommand):
-    def run(self):
-        self.window.run_command(
-            "edit_settings",
-            {
-                "base_file": "${packages}/MarkdownGlance/MarkdownGlance.sublime-settings",
-                "default": "{}",
-            },
-        )
-
-
 class MdglanceCopyDiagnosticsCommand(sublime_plugin.WindowCommand):
     def run(self):
         settings = container.settings.get()
