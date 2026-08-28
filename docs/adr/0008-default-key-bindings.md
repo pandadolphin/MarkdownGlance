@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted. Supersedes the shortcut clause of PRD §5 (Full Screen preview).
+Superseded by [ADR 0009](0009-full-screen-toggle-returns-to-ctrl-shift-v.md).
+The chord decided here does not dispatch. Superseded the shortcut clause of
+PRD §5 (Full Screen preview).
 
 ## Context
 

@@ -152,10 +152,11 @@ The user can toggle a preview sheet in the same group as the source.
 
 Acceptance criteria:
 
-- Default shortcuts are `Ctrl+K`, `Shift+V` on Windows/Linux and `Cmd+K`,
-  `Shift+V` on macOS. `Ctrl+Shift+V` was the original choice and was given up
-  because it is Sublime Text's own Paste and Indent; see
-  [ADR 0008](adr/0008-default-key-bindings.md).
+- Default shortcuts are `Ctrl+Shift+V` on Windows/Linux and `Cmd+Shift+V` on
+  macOS. They were given up in 0.1.2 for a `Ctrl+K`, `Shift+V` chord, because
+  `Ctrl+Shift+V` is Sublime Text's own Paste and Indent, and taken back in
+  0.1.3, because the chord does not dispatch; see
+  [ADR 0009](adr/0009-full-screen-toggle-returns-to-ctrl-shift-v.md).
 - “Full Screen” means the preview occupies the source editor group; it does not
   toggle Sublime Text or operating-system full-screen mode.
 - Toggling from the preview closes or hides it and focuses the source sheet.

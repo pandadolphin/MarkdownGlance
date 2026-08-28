@@ -13,6 +13,9 @@ PLATFORMS = ("Linux", "OSX", "Windows")
 # Sublime names the "=" and "-" keys on macOS; the literal characters Linux and
 # Windows accept never match there, so the OSX keymap must spell them out.
 MACOS_KEY_NAMES = {"=": "equals", "-": "minus"}
+# ADR 0009: the Full Screen toggle deliberately shadows paste_and_indent while
+# a Markdown source view is focused. Nothing else may cost the user a key.
+SINGLE_STROKE_OUTSIDE_PREVIEW = frozenset({"ctrl+shift+v", "super+shift+v"})
 
 
 def as_macos_key(key):
@@ -74,17 +77,19 @@ class PackageIdentityTest(unittest.TestCase):
                         self.assertTrue(context["key"].startswith("mdglance."), name)
                         self.assertIs(context["operand"], True)
 
-    def test_bindings_are_chords_or_confined_to_the_preview(self):
-        # ADR 0008: a single-stroke default would take a key Sublime Text
-        # already uses in the buffer the user is editing. Only bindings that
-        # fire inside a view this package created may be one stroke.
+    def test_single_stroke_bindings_outside_the_preview_are_declared(self):
+        # ADR 0009: a single-stroke default outside the preview shadows a key
+        # Sublime Text already uses in the buffer being edited, so every one is
+        # named here and nowhere else. Bindings that fire only inside a view
+        # this package created are unconstrained.
         for platform in PLATFORMS:
             name = "Default ({}).sublime-keymap".format(platform)
             for item in self.load(name):
                 contexts = {entry["key"] for entry in item.get("context", ())}
-                if contexts == {"mdglance.preview_focused"}:
+                keys = item["keys"]
+                if contexts == {"mdglance.preview_focused"} or len(keys) > 1:
                     continue
-                self.assertGreater(len(item["keys"]), 1, (name, item["keys"]))
+                self.assertIn(keys[0], SINGLE_STROKE_OUTSIDE_PREVIEW, (name, keys))
 
     def test_platform_bindings_differ_only_by_macos_key_spelling(self):
         for suffix in BINDINGS:

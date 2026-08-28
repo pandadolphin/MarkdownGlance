@@ -5,12 +5,12 @@
         "context": [{"key": "mdglance.markdown_source", "operator": "equal", "operand": true}]
     },
     {
-        "keys": ["super+k", "shift+v"],
+        "keys": ["super+shift+v"],
         "command": "mdglance_toggle_full_screen",
         "context": [{"key": "mdglance.markdown_source", "operator": "equal", "operand": true}]
     },
     {
-        "keys": ["super+k", "shift+v"],
+        "keys": ["super+shift+v"],
         "command": "mdglance_toggle_full_screen",
         "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]
     },
