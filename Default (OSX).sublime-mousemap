@@ -1,0 +1,16 @@
+[
+    {
+        "button": "scroll_up",
+        "modifiers": ["super"],
+        "command": "mdglance_zoom",
+        "args": {"delta": 0.1},
+        "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]
+    },
+    {
+        "button": "scroll_down",
+        "modifiers": ["super"],
+        "command": "mdglance_zoom",
+        "args": {"delta": -0.1},
+        "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]
+    }
+]

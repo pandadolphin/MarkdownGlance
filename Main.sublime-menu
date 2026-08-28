@@ -1,0 +1,18 @@
+[
+    {
+        "id": "preferences",
+        "children": [
+            {
+                "caption": "Package Settings",
+                "children": [
+                    {
+                        "caption": "MarkdownGlance",
+                        "children": [
+                            {"caption": "Settings", "command": "mdglance_open_settings"}
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]
