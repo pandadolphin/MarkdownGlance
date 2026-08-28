@@ -4,10 +4,21 @@ on: [push, pull_request]
 
 jobs:
   pure-python:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        # Keep one command spelling for every host; Windows runners have bash.
+        shell: bash
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.8", "3.14"]
+        exclude:
+          # macOS runners are arm64 and setup-python publishes no 3.8 build for
+          # them. The release gate is Linux/3.8, so macOS covers 3.14 only.
+          - os: macos-latest
+            python-version: "3.8"
     steps:
       # The package imports itself as `MarkdownGlance.preview`, so the checkout
       # directory must carry the package name and tests run from its parent.

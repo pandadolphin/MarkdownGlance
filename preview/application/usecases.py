@@ -8,6 +8,7 @@ from ..domain.contracts import (
     RenderSettings,
     ThemeSnapshot,
 )
+from ..domain.paths import HOST
 from ..renderer.errors import error_card
 from ..renderer.stylesheet import represent
 from ..renderer.toc import build_toc, toc_required
@@ -48,7 +49,7 @@ class UseCases:
         if view.file_name():
             return os.path.dirname(view.file_name())
         folders = window.folders() if window is not None else []
-        return os.path.realpath(folders[0]) if folders else None
+        return HOST.normalise(folders[0]) if folders else None
 
     def _session_for_active(self, window) -> Optional[PreviewSession]:
         sheet = window.active_sheet()
@@ -313,10 +314,10 @@ class UseCases:
             or path >= len(session.last_document.links)
         ):
             return
-        target = session.last_document.links[path]
-        if session.base_path is None or os.path.isabs(target):
+        target = HOST.expand(session.last_document.links[path])
+        if session.base_path is None or HOST.is_absolute(target):
             return
-        window.open_file(os.path.realpath(os.path.join(session.base_path, target)))
+        window.open_file(HOST.resolve(session.base_path, target))
 
     def source_modified(self, view) -> None:
         window = view.window()
