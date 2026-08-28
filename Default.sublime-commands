@@ -4,8 +4,14 @@
     {"caption": "MarkdownGlance: Zoom In", "command": "mdglance_zoom", "args": {"delta": 0.1}},
     {"caption": "MarkdownGlance: Zoom Out", "command": "mdglance_zoom", "args": {"delta": -0.1}},
     {"caption": "MarkdownGlance: Reset Zoom", "command": "mdglance_zoom", "args": {"reset": true}},
-    {"caption": "MarkdownGlance: Open Settings", "command": "mdglance_open_settings"},
+    {"caption": "Preferences: MarkdownGlance Settings", "command": "mdglance_open_settings"},
     {"caption": "MarkdownGlance: Copy Diagnostics", "command": "mdglance_copy_diagnostics"},
-    {"caption": "MarkdownGlance: Run Contract Tests", "command": "mdglance_run_contract_tests"},
-    {"caption": "MarkdownGlance: Run Benchmark", "command": "mdglance_run_benchmark"}
+    {
+        "caption": "Preferences: MarkdownGlance Key Bindings",
+        "command": "edit_settings",
+        "args": {
+            "base_file": "${packages}/MarkdownGlance/Default (${platform}).sublime-keymap",
+            "default": "[\n\t$0\n]\n"
+        }
+    }
 ]

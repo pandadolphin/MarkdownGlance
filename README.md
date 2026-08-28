@@ -49,7 +49,8 @@ Side** from the Command Palette.
 | MarkdownGlance: Open Preview to the Side | `Ctrl+K`, then `V` |
 | MarkdownGlance: Toggle Preview | `Ctrl+Shift+V` |
 | MarkdownGlance: Zoom In / Out / Reset Zoom | `Ctrl+=`, `Ctrl+-`, `Ctrl+0` |
-| MarkdownGlance: Open Settings | — |
+| Preferences: MarkdownGlance Settings | — |
+| Preferences: MarkdownGlance Key Bindings | — |
 | MarkdownGlance: Copy Diagnostics | — |
 
 The open and toggle commands also work while an owned preview has focus.

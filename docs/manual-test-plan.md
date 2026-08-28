@@ -32,5 +32,8 @@ forward-compatibility testing.
 ## Automated prerequisites
 
 Run `python -m unittest discover -s MarkdownGlance/tests -t . -p 'test_*.py'` from the parent of the `MarkdownGlance` checkout, Python
-compilation, `MarkdownGlance: Run Contract Tests`, and the 100-sample benchmark.
+compilation, the contract runner and the 100-sample benchmark. The last two
+are developer commands, kept out of the command palette; run them from the
+Sublime console with `window.run_command("mdglance_run_contract_tests")` and
+`window.run_command("mdglance_run_benchmark")`.
 Attach JSON evidence from `docs/verification/` to the release record.

@@ -8,7 +8,15 @@
                     {
                         "caption": "MarkdownGlance",
                         "children": [
-                            {"caption": "Settings", "command": "mdglance_open_settings"}
+                            {"caption": "Settings", "command": "mdglance_open_settings"},
+                            {
+                                "caption": "Key Bindings",
+                                "command": "edit_settings",
+                                "args": {
+                                    "base_file": "${packages}/MarkdownGlance/Default (${platform}).sublime-keymap",
+                                    "default": "[\n\t$0\n]\n"
+                                }
+                            }
                         ]
                     }
                 ]

@@ -2,6 +2,7 @@ import ast
 import copy
 import json
 import os
+import re
 import unittest
 
 from MarkdownGlance.preview.domain.contracts import RenderSettings
@@ -51,9 +52,19 @@ class PackageIdentityTest(unittest.TestCase):
 
     def test_public_command_and_key_context_namespaces_are_unique(self):
         commands = self.load("Default.sublime-commands")
-        self.assertTrue(
-            all(item["command"].startswith("mdglance_") for item in commands)
-        )
+        for item in commands:
+            if item["command"] == "edit_settings":
+                # The only built-in the palette may reach, and only at this
+                # package's own keymap.
+                self.assertIn(
+                    "${packages}/MarkdownGlance/", item["args"]["base_file"]
+                )
+                continue
+            self.assertTrue(item["command"].startswith("mdglance_"), item["caption"])
+        # Developer-only commands stay out of every user's command palette.
+        palette = {item["command"] for item in commands}
+        self.assertNotIn("mdglance_run_contract_tests", palette)
+        self.assertNotIn("mdglance_run_benchmark", palette)
         for platform in PLATFORMS:
             for suffix in BINDINGS:
                 name = "Default ({}).{}".format(platform, suffix)
@@ -83,6 +94,17 @@ class PackageIdentityTest(unittest.TestCase):
         self.assertIn('"enable_mermaid": false', shipped)
         self.assertNotIn('"enable_mermaid": true', shipped)
         self.assertFalse(RenderSettings().enable_mermaid)
+
+    def test_diagnostics_report_the_released_version(self):
+        # A diagnostics paste is worthless if its version is a stale literal,
+        # so it is pinned to the newest entry in the changelog.
+        path = os.path.join(ROOT, "preview", "adapter", "commands.py")
+        with open(path, encoding="utf-8") as source:
+            reported = re.search(r'"version": "([^"]+)"', source.read()).group(1)
+        with open(os.path.join(ROOT, "CHANGELOG.md"), encoding="utf-8") as source:
+            released = re.search(r"^## \[(\d+\.\d+\.\d+)\]", source.read(), re.M)
+        self.assertEqual(reported, released.group(1))
+        self.assertIn(reported, self.load("messages.json"))
 
     def test_runtime_selector_is_python_38_compatible(self):
         with open(os.path.join(ROOT, ".python-version"), encoding="ascii") as source:
