@@ -74,6 +74,18 @@ class PackageIdentityTest(unittest.TestCase):
                         self.assertTrue(context["key"].startswith("mdglance."), name)
                         self.assertIs(context["operand"], True)
 
+    def test_bindings_are_chords_or_confined_to_the_preview(self):
+        # ADR 0008: a single-stroke default would take a key Sublime Text
+        # already uses in the buffer the user is editing. Only bindings that
+        # fire inside a view this package created may be one stroke.
+        for platform in PLATFORMS:
+            name = "Default ({}).sublime-keymap".format(platform)
+            for item in self.load(name):
+                contexts = {entry["key"] for entry in item.get("context", ())}
+                if contexts == {"mdglance.preview_focused"}:
+                    continue
+                self.assertGreater(len(item["keys"]), 1, (name, item["keys"]))
+
     def test_platform_bindings_differ_only_by_macos_key_spelling(self):
         for suffix in BINDINGS:
             linux = self.load("Default (Linux).{}".format(suffix))

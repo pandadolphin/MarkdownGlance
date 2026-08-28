@@ -6,6 +6,16 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-28
+
+### Changed
+
+- **The Full Screen toggle moved from `Ctrl+Shift+V` to `Ctrl+K`, `Shift+V`**
+  (`Cmd+K`, `Shift+V` on macOS). `Ctrl+Shift+V` is Sublime Text's own Paste and
+  Indent, and a context that fires exactly while you are editing Markdown is
+  exactly when you reach for it. The new chord collides with nothing on any
+  platform. See [ADR 0008](docs/adr/0008-default-key-bindings.md).
+
 ## [0.1.1] - 2026-08-28
 
 ### Added
@@ -46,6 +56,7 @@ First public release.
 - `MarkdownGlance: Copy Diagnostics`, which redacts source text, paths, URLs
   and Mermaid payloads.
 
-[Unreleased]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.1...HEAD
+[Unreleased]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.2...HEAD
+[0.1.2]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.1...0.1.2
 [0.1.1]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/pandadolphin/MarkdownGlance/releases/tag/0.1.0

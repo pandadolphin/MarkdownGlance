@@ -924,9 +924,9 @@ Keymap (Linux; OSX uses `super`):
 [
   {"keys": ["ctrl+k", "v"], "command": "mdglance_open_side_by_side",
    "context": [{"key": "mdglance.markdown_source", "operator": "equal", "operand": true}]},
-  {"keys": ["ctrl+shift+v"], "command": "mdglance_toggle_full_screen",
+  {"keys": ["ctrl+k", "shift+v"], "command": "mdglance_toggle_full_screen",
    "context": [{"key": "mdglance.markdown_source", "operator": "equal", "operand": true}]},
-  {"keys": ["ctrl+shift+v"], "command": "mdglance_toggle_full_screen",
+  {"keys": ["ctrl+k", "shift+v"], "command": "mdglance_toggle_full_screen",
    "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]},
   {"keys": ["ctrl+="], "command": "mdglance_zoom", "args": {"delta": 0.1},
    "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]},

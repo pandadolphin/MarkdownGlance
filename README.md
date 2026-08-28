@@ -47,11 +47,18 @@ Side** from the Command Palette.
 | Command | Shortcut |
 | --- | --- |
 | MarkdownGlance: Open Preview to the Side | `Ctrl+K`, then `V` |
-| MarkdownGlance: Toggle Preview | `Ctrl+Shift+V` |
+| MarkdownGlance: Toggle Preview | `Ctrl+K`, then `Shift+V` |
 | MarkdownGlance: Zoom In / Out / Reset Zoom | `Ctrl+=`, `Ctrl+-`, `Ctrl+0` |
 | Preferences: MarkdownGlance Settings | — |
 | Preferences: MarkdownGlance Key Bindings | — |
 | MarkdownGlance: Copy Diagnostics | — |
+
+On macOS, `Cmd` replaces `Ctrl`. The zoom keys apply only while the preview
+itself is focused; everywhere else Sublime Text's own bindings are left alone,
+`Ctrl+Shift+V` for Paste and Indent included —
+[ADR 0008](docs/adr/0008-default-key-bindings.md) has the reasoning. Edit the
+defaults from **Preferences → Package Settings → MarkdownGlance → Key
+Bindings**; every command is in the command palette with or without a binding.
 
 The open and toggle commands also work while an owned preview has focus.
 Closing the source closes its preview; closing the preview never closes or
