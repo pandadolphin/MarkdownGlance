@@ -32,6 +32,22 @@ class Sheet:
         return self._view
 
 
+class SurfaceView:
+    """A plugin-owned preview/TOC view, as seen through its sheet."""
+
+    def __init__(self, identifier):
+        self._id = identifier
+
+    def id(self):
+        return self._id
+
+    def buffer_id(self):
+        return -self._id
+
+    def match_selector(self, point, selector):
+        return False
+
+
 class View:
     def __init__(self, identifier, name="source.md", filename=None, markdown=True):
         self._id = identifier
@@ -40,6 +56,10 @@ class View:
         self.markdown = markdown
         self._sheet = Sheet(identifier + 100, self)
         self._window = None
+
+    def id(self):
+        # A view id is not a buffer id and not a sheet id: three id spaces.
+        return self._id + 200
 
     def buffer_id(self):
         return self._id
@@ -121,7 +141,24 @@ class Backend:
     def focus(self, handle):
         self.focused.append(handle.id)
         window = self.windows[handle.window_id]
-        window._active = Sheet(handle.id, None)
+        window._active = self.sheet_for(handle)
+
+    def sheet_for(self, handle):
+        # Sublime numbers sheets and views separately; never reuse the view id.
+        return Sheet(handle.id + 5000, SurfaceView(handle.id))
+
+    def owner_of(self, sheet_or_view):
+        if sheet_or_view is None:
+            return None
+        view = sheet_or_view.view() if hasattr(sheet_or_view, "view") else sheet_or_view
+        item = self.handles.get(view.id()) if view is not None else None
+        return item[1] if item else None
+
+    def role_of(self, sheet_or_view):
+        if sheet_or_view is None:
+            return None
+        view = sheet_or_view.view() if hasattr(sheet_or_view, "view") else sheet_or_view
+        return self.roles.get(view.id()) if view is not None else None
 
     def move(self, handle, group):
         self.groups[handle.id] = group
@@ -221,7 +258,7 @@ class UseCasesTest(unittest.TestCase):
         self.window._active = self.source.sheet()
         self.usecases.open_side_by_side(self.window)
         self.assertEqual(len(self.manager.sessions_in(1)), 1)
-        self.window._active = Sheet(session.preview_surface.id, None)
+        self.window._active = self.backend.sheet_for(session.preview_surface)
         self.usecases.toggle_full_screen(self.window)
         self.assertEqual(session.mode, PreviewMode.FULL_SCREEN)
         self.assertNotIn(self.source.sheet().id(), self.backend.closed)
@@ -250,10 +287,29 @@ class UseCasesTest(unittest.TestCase):
             reason for sid, reason in self.scheduler.requests if sid == session.id
         ]
         self.assertEqual(reasons, ["open", "edit", "save"])
-        second._active = Sheet(session.preview_surface.id, None)
+        second._active = self.backend.sheet_for(session.preview_surface)
         self.usecases.adjust_zoom(second, 9.0)
         self.assertEqual(session.zoom, 3.0)
         self.assertEqual(reasons, ["open", "edit", "save"])
+
+    def test_preview_commands_survive_a_sheet_id_that_is_not_the_view_id(self):
+        self.usecases.open_side_by_side(self.window)
+        session = self.manager.for_source(1, 10)
+        sheet = self.backend.sheet_for(session.preview_surface)
+        self.assertNotEqual(sheet.id(), session.preview_surface.id)
+        self.window._active = sheet
+
+        self.usecases.adjust_zoom(self.window, 0.5)
+        self.assertEqual(session.zoom, 1.5)
+        self.usecases.adjust_zoom(self.window, reset=True)
+        self.assertEqual(session.zoom, 1.0)
+
+        self.usecases.toggle_full_screen(self.window)
+        self.assertEqual(session.mode, PreviewMode.FULL_SCREEN)
+        self.window._active = self.backend.sheet_for(session.preview_surface)
+        self.usecases.toggle_full_screen(self.window)
+        self.assertIsNone(self.manager.get(session.id))
+        self.assertIn(session.preview_surface.id, self.backend.closed)
 
     def test_absolute_editor_link_is_rejected(self):
         self.usecases.open_side_by_side(self.window)
@@ -261,7 +317,7 @@ class UseCasesTest(unittest.TestCase):
         session.last_document = PreviewDocument(
             1, "", (), (), (), (OUTSIDE, "~/secret")
         )
-        self.window._active = Sheet(session.preview_surface.id, None)
+        self.window._active = self.backend.sheet_for(session.preview_surface)
         with mock.patch.dict(os.environ, {"HOME": HOME, "USERPROFILE": HOME}):
             for index in (0, 1):
                 self.usecases.open_relative(self.window, session.action_token, index)
@@ -291,7 +347,7 @@ class UseCasesTest(unittest.TestCase):
             (),
             (),
         )
-        self.window._active = Sheet(9999, None)
+        self.window._active = Sheet(9999, SurfaceView(9999))
 
         self.usecases.navigate(self.window, first.action_token, "first")
 

@@ -3,7 +3,7 @@
     "update_delay_ms": 100,
 
     // Mermaid is opt-in because diagram source is sent to mermaid_server.
-    "enable_mermaid": true,
+    "enable_mermaid": false,
     "mermaid_server": "https://mermaid.ink",
 
     // HTTP images and HTTPS-to-HTTP redirects are blocked by default.

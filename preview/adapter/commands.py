@@ -10,10 +10,12 @@ from .container import container
 
 
 def _owned_session(window):
+    # Sheets and views have separate id spaces; surfaces are keyed by view id.
     sheet = window.active_sheet()
+    view = sheet.view() if sheet is not None else None
     return (
-        container.manager.for_surface(sheet.id())
-        if sheet and container.manager
+        container.manager.for_surface(view.id())
+        if view is not None and container.manager
         else None
     )
 
@@ -140,7 +142,8 @@ class MdglanceRunContractTestsCommand(sublime_plugin.WindowCommand):
                     next(
                         sheet
                         for sheet in self.window.sheets()
-                        if sheet.id() == handle.id
+                        if sheet.view() is not None
+                        and sheet.view().id() == handle.id
                     )
                 )
                 == "contract"
@@ -152,9 +155,9 @@ class MdglanceRunContractTestsCommand(sublime_plugin.WindowCommand):
             self.window.focus_group(0)
             backend.reveal(handle)
             assert self.window.active_group() == 0
-            assert self.window.active_sheet_in_group(1).id() == handle.id
+            assert self.window.active_sheet_in_group(1).view().id() == handle.id
             backend.focus(handle)
-            assert self.window.active_sheet().id() == handle.id
+            assert self.window.active_sheet().view().id() == handle.id
             backend.set_title(handle, "Contract renamed")
             results.append({"backend": "phantom_view", "result": "pass"})
         except Exception as error:
