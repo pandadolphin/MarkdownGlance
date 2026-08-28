@@ -49,10 +49,9 @@ response bodies do not enter errors or diagnostics.
 
 ## Deviations and deferred gates
 
-1. The production package lives in the transitional `MarkdownGlance/`
-   subdirectory of the existing repository so both implementations remain
-   untouched and testable together. An independent repository should move that
-   directory's contents to its root without changing package-internal paths.
+1. The package was developed in a transitional `MarkdownGlance/` subdirectory
+   of the `MarkdownLivePreview` repository and split into this repository with
+   its history on 2026-08-28; package-internal paths did not change.
 2. `word_wrap` is enabled on the scratch preview. The initial design's chrome
    suppression value clipped prose in real ST 4200; the authoritative design was
    updated to record this verified requirement.

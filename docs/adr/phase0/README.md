@@ -1,5 +1,8 @@
 # Phase 0 presentation backend experiment
 
+The harness lives in the `MarkdownLivePreview` repository (commit `a87cf7e`);
+this directory holds only the recorded evidence.
+
 Run `Markdown Preview Phase 0: Run Backend Contracts` first. Then run each
 backend with the same window, fixture, theme, zoom, and interaction sequence.
 

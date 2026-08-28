@@ -71,7 +71,10 @@ Select Candidate B: scratch `View` + `PhantomSet`.
 Its navigation capability is `PROGRAMMATIC`, using recorded heading position
 ratios with `layout_extent()` and `set_viewport_position()`. The production TOC
 therefore uses a separate owned surface. Candidate A is excluded from the
-release package; its Phase 0 harness and evidence remain for provenance.
+release package. The evidence stays under `phase0/`; the harness
+(`phase0_backend_experiment.py`, `Phase0.sublime-commands` and the
+`mdpreview_phase0_*` keymap entries) runs in the old package's Python 3.3
+runtime and remains in the `MarkdownLivePreview` repository at commit `a87cf7e`.
 
 ## Required follow-up
 
