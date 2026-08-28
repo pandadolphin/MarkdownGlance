@@ -1,0 +1,12 @@
+{
+  "backend": "phantom_view",
+  "cpu": "x86_64",
+  "fixture_bytes": 102446,
+  "p50_ms": 766.424,
+  "p95_ms": 784.685,
+  "parser": "markdown2 2.3.9",
+  "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+  "python": "3.10.12",
+  "samples": 100,
+  "warmups": 3
+}
