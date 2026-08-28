@@ -6,6 +6,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-08-29
+
 ### Changed
 
 - The **Settings** menu item and the `Preferences: MarkdownGlance Settings`
@@ -86,7 +88,8 @@ First public release.
 - `MarkdownGlance: Copy Diagnostics`, which redacts source text, paths, URLs
   and Mermaid payloads.
 
-[Unreleased]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.3...HEAD
+[Unreleased]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.4...HEAD
+[0.1.4]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.1...0.1.2
 [0.1.1]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.0...0.1.1
