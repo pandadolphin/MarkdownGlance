@@ -137,9 +137,7 @@ MarkdownGlance/
 │       └── contexts.py             # on_query_context keys for owned surfaces
 ├── lib/                            # vendored markdown2 2.3.9 (MIT); no bs4
 ├── resources/
-│   ├── preview.css
-│   ├── loading.png, missing.png    # embedded as data URIs at load
-│   └── ...
+│   └── preview.css                 # loading/error states are CSS cards, not images
 ├── tests/
 │   ├── unit/
 │   ├── state/
@@ -998,8 +996,8 @@ def render(request: RenderRequest, resolver: AssetResolverPort) -> PreviewDocume
 | `<img>` src rewriting + `width`/`height` scaling | `structure.py` collects `ImageRef(src, element_ref)`; scaling moves to `minihtml.py` using `rem`. Path resolution moves to `assets/resolver.py` (`expanduser`, `realpath`, `file://` stripping). |
 | Comment removal, `<pre>` space/`<br />` fix, `<br/>` → `<br />` | Keep in `minihtml.py`, ported verbatim with their tests. |
 | `get_base64_image`, `load_image`, `images_cache`, `images_loading`, module-level `executor` | Replaced by `assets/` (§10). |
-| `get_image_size` (PNG/JPEG/GIF header parsing) | Moved verbatim to `assets/images.py`; it is already pure. |
-| `resources/stylesheet.css`, loading/404 images | Kept; CSS split into base + theme variables + zoom root rule. |
+| `get_image_size` (PNG/JPEG/GIF header parsing) | Reimplemented in `assets/images.py` as pure signature-based detection (ADR 0004). |
+| `resources/stylesheet.css` | Kept; CSS split into base + theme variables + zoom root rule. The loading and 404 images are dropped: both states are CSS cards. |
 
 ADR 0003 removes `bs4`. `structure.py` uses a purpose-built stdlib
 `HTMLParser` tree; the characterization and sanitizer suites cover the

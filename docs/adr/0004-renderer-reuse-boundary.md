@@ -6,6 +6,10 @@ Accepted.
 
 ## Decision
 
+The assets below are this repository's own implementations from its fork stage,
+the ones the rewrite had to keep, replace or drop. The single exception is
+`lib/markdown2.py`, which is vendored third-party code.
+
 | Existing asset | Decision |
 | --- | --- |
 | `lib/markdown2.py` 2.3.9 | Vendor unchanged with MIT attribution |
@@ -18,10 +22,10 @@ Accepted.
 | current lifecycle/window-moving code | Do not reuse |
 | `HtmlSheet` prototype | Evidence only; exclude from production package |
 
-The retained parser and asset files remain covered by the repository MIT
-license. Its copyright and MIT notice are preserved in the vendored source and
-the package-level `LICENSE`. No external runtime dependency is required by
-MarkdownGlance.
+`lib/markdown2.py` keeps its own copyright and MIT notice in the vendored
+source and in `THIRD_PARTY_NOTICES.md`. Everything else the rewrite retains is
+this repository's own work under its MIT license. No external runtime
+dependency is required by MarkdownGlance.
 
 ## Consequences
 

@@ -96,13 +96,13 @@ test, and a decision that constrains the design belongs in a new ADR under
 
 ## Acknowledgements
 
-MarkdownGlance owes its idea, and part of its code, to
+MarkdownGlance owes its idea to
 [MarkdownLivePreview](https://github.com/math2001/MarkdownLivePreview) by
-Mathieu Paturel — thank you. This package rewrites the window and session
-handling for Sublime Text 4, but the renderer still builds on that work.
+Mathieu Paturel — thank you for showing that a same-window Markdown preview
+belongs in Sublime Text. MarkdownGlance is an independent implementation for
+Sublime Text 4; the code here is its own.
 
 ## License
 
-MIT. See [LICENSE](LICENSE), which carries the upstream copyright alongside
-this package's own. Vendored dependency attribution is recorded in
+MIT. See [LICENSE](LICENSE). Vendored dependency attribution is recorded in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
