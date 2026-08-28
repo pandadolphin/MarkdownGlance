@@ -48,6 +48,10 @@ class PhantomViewBackend:
         self._phantoms[view.id()] = sublime.PhantomSet(view, "mdglance")
         return SurfaceHandle(self.name, view.id(), window.id())
 
+    def viewport_width(self, handle: SurfaceHandle) -> float:
+        view = self._view(handle)
+        return float(view.viewport_extent()[0]) if view is not None else 0.0
+
     def set_role(self, handle: SurfaceHandle, role: str) -> None:
         view = self._view(handle)
         if view is not None:

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import FrozenSet, Optional, Set
+from typing import FrozenSet, Optional, Set, Tuple
 
 from ..domain.contracts import (
     AssetKey,
@@ -51,6 +51,7 @@ class PreviewSession:
     action_token: str = ""
     settings: RenderSettings = field(default_factory=RenderSettings)
     theme: ThemeSnapshot = field(default_factory=ThemeSnapshot)
+    table_budget: Optional[Tuple[int, int]] = None
     inflight_generation: Optional[int] = None
     inflight_future: object = None
     debounce_handle: object = None

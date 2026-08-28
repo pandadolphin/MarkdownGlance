@@ -49,6 +49,7 @@ class RenderSettings:
     remote_timeout_seconds: float = 15.0
     remote_max_bytes: int = 10 * 1024 * 1024
     remote_max_dimension: int = 4096
+    table_max_columns: int = 200
     toc_minimum_length: int = 1200
     toc_minimum_headings: int = 3
     debug_logging: bool = False
@@ -64,6 +65,8 @@ class RenderRequest:
     settings: RenderSettings
     theme: ThemeSnapshot
     action_token: str = ""
+    # Preview width in px, 0.0 when it cannot be measured yet.
+    viewport_width: float = 0.0
 
 
 @dataclass(frozen=True)

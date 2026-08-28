@@ -3,7 +3,7 @@
 ## 中文摘要
 
 - release gate 仅覆盖 Linux ST 4200/Python 3.8 stable；newest dev/Python 3.14、macOS 与 Windows testing 均不阻塞 release。
-- 必测 saved/unsaved、两种 modes、三种 themes、images、TOC、zoom、Mermaid、layout/lifecycle 和 coexistence。
+- 必测 saved/unsaved、两种 modes、三种 themes、tables、images、TOC、zoom、Mermaid、layout/lifecycle 和 coexistence。
 - 每次 run 记录 build/runtime、结果、screenshots 与 deviations；不可用的 environment 标为 blocked，不可记 pass。
 
 ## Matrix
@@ -21,13 +21,18 @@ compatibility testing.
 4. Check short, Unicode, malformed/raw HTML and 100 KiB documents. For TOC,
    test below-threshold, nested and duplicate headings and top/middle/bottom
    navigation.
-5. Check relative, absolute, missing, oversized and extensionless local images;
+5. Check tables: narrow, wider than the preview, right/centre aligned, CJK and
+   mixed CJK/Latin, links and bold inside cells, and a raw HTML table. Confirm
+   every row stays on the column grid and no row is wrapped by the host. Resize
+   and maximise the window, and zoom in and out: the table refits within about
+   a second and still fills the group.
+6. Check relative, absolute, missing, oversized and extensionless local images;
    HTTPS, redirect, timeout, invalid and oversized remote images.
-6. Check Mermaid disabled, enabled disclosure, offline, timeout, invalid source
+7. Check Mermaid disabled, enabled disclosure, offline, timeout, invalid source
    and custom HTTPS server. Confirm diagnostics contain no source or locator.
-7. Close TOC, preview, source, group and window; reload the plugin. Change the
+8. Close TOC, preview, source, group and window; reload the plugin. Change the
    layout after preview creation and confirm it is not overwritten on close.
-8. Install beside MarkdownLivePreview. Check directory, module, command,
+9. Install beside MarkdownLivePreview. Check directory, module, command,
    settings and resource isolation; document the expected shortcut collision.
 
 ## Automated prerequisites

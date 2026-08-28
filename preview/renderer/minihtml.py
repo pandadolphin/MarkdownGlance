@@ -43,10 +43,6 @@ ALLOWED_TAGS = frozenset(
         "hr",
         "span",
         "div",
-        "table",
-        "tr",
-        "td",
-        "th",
     )
 )
 DROP_CONTENT_TAGS = frozenset(("script", "style", "iframe", "object", "embed"))

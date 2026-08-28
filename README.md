@@ -9,7 +9,13 @@
 MarkdownGlance renders live Markdown in Sublime Text editor groups without a
 browser or WebView. It supports saved and unsaved buffers, theme-aware styling,
 a separate navigable TOC, per-session zoom, local and bounded asynchronous
-remote images, and optional Mermaid diagrams.
+remote images, GFM tables, and optional Mermaid diagrams.
+
+Sublime Text's minihtml cannot lay out a table, so tables are typeset as aligned
+monospace columns sized to the measured width of the preview: they fill the
+group and re-fit when the window is resized. `table_max_columns` (200) only caps
+that on a very wide screen. See
+[ADR 0007](docs/adr/0007-table-rendering-under-minihtml.md).
 
 ## Requirements and installation
 

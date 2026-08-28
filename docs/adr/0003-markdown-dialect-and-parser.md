@@ -2,7 +2,7 @@
 
 ## 中文摘要
 
-- 保留 vendored `markdown2` 2.3.9（MIT），锁定 extras：`fenced-code-blocks`、`highlightjs-lang`、`cuddled-lists`、`header-ids`。
+- 保留 vendored `markdown2` 2.3.9（MIT），锁定 extras：`fenced-code-blocks`、`highlightjs-lang`、`cuddled-lists`、`header-ids`、`tables`（`tables` 见 [ADR 0007](0007-table-rendering-under-minihtml.md)）。
 - 不保留 `bs4`；target Python 3.8 environment 没有现有 dependency，新的 stdlib `HTMLParser` structured pass 已由 sanitizer、malformed input、TOC、Mermaid 与 raw HTML tests 覆盖。
 - ST 4200/Python 3.8.12 已成功 import/render；CPython 3.14 tests 作为 non-blocking forward evidence，不是 release gate。
 
@@ -20,7 +20,12 @@ fenced-code-blocks
 highlightjs-lang
 cuddled-lists
 header-ids
+tables
 ```
+
+`tables` was added after the first release; minihtml cannot lay a table out, so
+the structural pass typesets one itself. See
+[ADR 0007](0007-table-rendering-under-minihtml.md).
 
 `header-ids` is not trusted as final identity: the structured pass rewrites all
 heading ids with deterministic, document-unique slugs. Markdown-generated and

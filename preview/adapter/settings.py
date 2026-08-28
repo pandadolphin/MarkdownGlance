@@ -8,7 +8,13 @@ from ..domain.settings import parse_settings
 
 SETTING_KEYS = tuple(asdict(RenderSettings()).keys())
 RENDER_KEYS = frozenset(
-    ("enable_mermaid", "mermaid_server", "toc_minimum_length", "toc_minimum_headings")
+    (
+        "enable_mermaid",
+        "mermaid_server",
+        "table_max_columns",
+        "toc_minimum_length",
+        "toc_minimum_headings",
+    )
 )
 POLICY_KEYS = frozenset(
     (

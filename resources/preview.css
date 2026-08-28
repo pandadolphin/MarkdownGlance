@@ -153,6 +153,54 @@ pre code {
     padding: 0;
 }
 
+.md-table {
+    display: block;
+    font-family: "DejaVu Sans Mono", "Liberation Mono", "Consolas", monospace;
+    background-color: var(--preview-surface);
+    border: 0.08rem solid var(--preview-border);
+    border-radius: 0.35rem;
+    margin: 1rem 0;
+    padding: 0.85rem 1rem;
+    line-height: 1.45rem;
+}
+
+/* A table holding CJK needs a font whose wide glyphs are exactly two Latin
+   advances; that font also draws curly quotes and dashes full width, which is
+   why a Latin-only table keeps the plain monospace above. */
+.md-table-cjk {
+    font-family: "Noto Sans Mono CJK SC", "Sarasa Mono SC", "Noto Sans Mono CJK TC",
+        monospace;
+}
+
+.md-table-caption {
+    display: block;
+    color: var(--preview-muted);
+    margin-bottom: 0.35rem;
+}
+
+.md-table-row {
+    display: block;
+}
+
+.md-table-head {
+    font-weight: bold;
+}
+
+/* Only the last line of the header carries the rule. */
+.md-table-rule {
+    border-bottom: 0.08rem solid var(--preview-border);
+    padding-bottom: 0.3rem;
+    margin-bottom: 0.3rem;
+}
+
+/* Padding is measured in monospace cells, so cell runs must not add width. */
+.md-table code {
+    background-color: var(--preview-surface);
+    border-radius: 0;
+    margin: 0;
+    padding: 0;
+}
+
 i.space {
     color: var(--preview-surface);
 }

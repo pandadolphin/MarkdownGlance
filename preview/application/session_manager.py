@@ -75,6 +75,9 @@ class SessionManager:
         session_id = self._by_surface.get(surface_id)
         return self.get(session_id) if session_id else None
 
+    def all_sessions(self) -> List[PreviewSession]:
+        return list(self._by_id.values())
+
     def sessions_in(self, window_id: int) -> List[PreviewSession]:
         return [s for s in self._by_id.values() if s.window_id == window_id]
 

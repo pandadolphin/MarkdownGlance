@@ -7,6 +7,7 @@ MARKDOWN_EXTRAS = (
     "highlightjs-lang",
     "cuddled-lists",
     "header-ids",
+    "tables",
 )
 
 

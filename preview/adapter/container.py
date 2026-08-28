@@ -15,10 +15,16 @@ from ..domain.contracts import RenderRequest
 from ..domain.paths import HOST
 from ..presentation.layout import LayoutOwner
 from ..presentation.phantom_view import PhantomViewBackend
+from ..renderer.stylesheet import root_font_px
+from ..renderer.tables import budgets
 from .clock import SublimeClock
 from .executors import OwnedExecutors
 from .settings import SettingsAdapter
 from .theme import theme_snapshot
+
+# ST reports no view-resize event, so a maximised or dragged window is noticed
+# by polling. Only a change in the table budget triggers a re-render.
+VIEWPORT_POLL_MS = 500
 
 
 def _window(window_id: int):
@@ -94,6 +100,7 @@ class Container:
         self.loaded = True
         for window in sublime.windows():
             self.usecases.reconcile(window)
+        self._watch_viewports()
 
     def policy(self) -> NetworkPolicy:
         return NetworkPolicy(self.settings.get(), self.policy_revision)
@@ -121,6 +128,8 @@ class Container:
         )
         session.theme = theme_snapshot(source)
         session.settings = self.settings.get()
+        viewport_width = self._viewport_width(session)
+        session.table_budget = self._table_budget(session, viewport_width)
         return RenderRequest(
             session.id,
             generation,
@@ -130,7 +139,34 @@ class Container:
             session.settings,
             session.theme,
             session.action_token,
+            viewport_width,
         )
+
+    def _viewport_width(self, session: PreviewSession) -> float:
+        handle = session.preview_surface
+        if handle is None or not self.backend.is_alive(handle):
+            return 0.0
+        return self.backend.viewport_width(handle)
+
+    def _table_budget(self, session: PreviewSession, viewport_width: float):
+        return budgets(
+            viewport_width,
+            root_font_px(session.zoom),
+            session.settings.table_max_columns,
+        )
+
+    def _watch_viewports(self) -> None:
+        """Re-render a preview whose group has been resized under it."""
+        if not self.loaded:
+            return
+        for session in self.manager.all_sessions():
+            if session.table_budget is None:
+                continue
+            budget = self._table_budget(session, self._viewport_width(session))
+            if budget != session.table_budget:
+                session.table_budget = budget
+                self.scheduler.request_render(session.id, "resize")
+        sublime.set_timeout(self._watch_viewports, VIEWPORT_POLL_MS)
 
     def present(self, session, document) -> None:
         self.record_stage("present")

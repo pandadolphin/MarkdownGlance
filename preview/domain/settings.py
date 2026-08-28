@@ -84,6 +84,15 @@ def parse_settings(
             True,
             report,
         ),
+        table_max_columns=_number(
+            values,
+            "table_max_columns",
+            defaults.table_max_columns,
+            8,
+            400,
+            True,
+            report,
+        ),
         toc_minimum_length=_number(
             values,
             "toc_minimum_length",

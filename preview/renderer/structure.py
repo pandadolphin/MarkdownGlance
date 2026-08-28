@@ -8,6 +8,8 @@ from ..domain.contracts import AssetKey, AssetKind, Heading, RenderRequest
 from ..domain.paths import HOST
 from .markdown_engine import DEFAULT_ENGINE, MarkdownEngine
 from .model import ElementNode, Node, StructuredDoc, TextNode
+from .stylesheet import root_font_px
+from .tables import budgets, replace_tables
 
 VOID_TAGS = frozenset(("br", "hr", "img"))
 HEADING_TAGS = frozenset(("h1", "h2", "h3", "h4", "h5", "h6"))
@@ -221,6 +223,14 @@ def parse(
             ):
                 links.append(href)
         position += max(len(text), 1)
+
+    # After the walk: the alignment padding is layout, not document text.
+    latin, cjk = budgets(
+        request.viewport_width,
+        root_font_px(request.zoom),
+        request.settings.table_max_columns,
+    )
+    replace_tables(parser.roots, latin, cjk)
 
     return StructuredDoc(
         tuple(parser.roots), tuple(headings), tuple(assets), tuple(links)
