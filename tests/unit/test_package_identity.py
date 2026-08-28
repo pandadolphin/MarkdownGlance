@@ -4,15 +4,25 @@ import json
 import os
 import unittest
 
+from MarkdownGlance.preview.domain.contracts import RenderSettings
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 BINDINGS = ("sublime-keymap", "sublime-mousemap")
 PLATFORMS = ("Linux", "OSX", "Windows")
+# Sublime names the "=" and "-" keys on macOS; the literal characters Linux and
+# Windows accept never match there, so the OSX keymap must spell them out.
+MACOS_KEY_NAMES = {"=": "equals", "-": "minus"}
+
+
+def as_macos_key(key):
+    prefix, plus, last = key.replace("ctrl+", "super+").rpartition("+")
+    return prefix + plus + MACOS_KEY_NAMES.get(last, last)
 
 
 def as_macos(bindings):
     macos = copy.deepcopy(bindings)
     for item in macos:
-        item["keys"] = [key.replace("ctrl+", "super+") for key in item.get("keys", ())]
+        item["keys"] = [as_macos_key(key) for key in item.get("keys", ())]
         item["modifiers"] = [
             modifier.replace("ctrl", "super") for modifier in item.get("modifiers", ())
         ]
@@ -50,7 +60,7 @@ class PackageIdentityTest(unittest.TestCase):
                         self.assertTrue(context["key"].startswith("mdglance."), name)
                         self.assertIs(context["operand"], True)
 
-    def test_platform_bindings_differ_only_by_the_macos_command_key(self):
+    def test_platform_bindings_differ_only_by_macos_key_spelling(self):
         for suffix in BINDINGS:
             linux = self.load("Default (Linux).{}".format(suffix))
             self.assertNotEqual(as_macos(linux), linux, suffix)
@@ -60,6 +70,16 @@ class PackageIdentityTest(unittest.TestCase):
             self.assertEqual(
                 self.load("Default (OSX).{}".format(suffix)), as_macos(linux), suffix
             )
+
+    def test_shipped_settings_keep_mermaid_opt_in(self):
+        # The default settings file is what users actually get; a "true" here
+        # sends diagram source to mermaid_server without anyone opting in.
+        path = os.path.join(ROOT, "MarkdownGlance.sublime-settings")
+        with open(path, encoding="utf-8") as source:
+            shipped = source.read()
+        self.assertIn('"enable_mermaid": false', shipped)
+        self.assertNotIn('"enable_mermaid": true', shipped)
+        self.assertFalse(RenderSettings().enable_mermaid)
 
     def test_runtime_selector_is_python_38_compatible(self):
         with open(os.path.join(ROOT, ".python-version"), encoding="ascii") as source:

@@ -51,14 +51,20 @@ class UseCases:
         folders = window.folders() if window is not None else []
         return HOST.normalise(folders[0]) if folders else None
 
+    def _active_view_id(self, sheet) -> Optional[int]:
+        # A sheet carries its own id, distinct from the id of the view inside
+        # it. Surfaces are keyed by view id, so always take the sheet's view.
+        view = sheet.view() if sheet is not None else None
+        return view.id() if view is not None else None
+
     def _session_for_active(self, window) -> Optional[PreviewSession]:
         sheet = window.active_sheet()
         if sheet is not None:
-            session = self.manager.for_surface(sheet.id())
-            if session is not None:
-                return session
             view = sheet.view()
             if view is not None:
+                session = self.manager.for_surface(view.id())
+                if session is not None:
+                    return session
                 return self.manager.for_source(window.id(), view.buffer_id())
         return None
 
@@ -132,7 +138,7 @@ class UseCases:
             self.switch_mode(session, PreviewMode.FULL_SCREEN)
         elif (
             session.preview_surface is not None
-            and active.id() == session.preview_surface.id
+            and self._active_view_id(active) == session.preview_surface.id
         ):
             source = self._find_source(session)
             self.backend.close(session.preview_surface)
