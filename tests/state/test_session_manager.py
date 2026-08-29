@@ -115,6 +115,13 @@ class SessionManagerTest(unittest.TestCase):
         self.assertEqual(self.layout.releases, [(2, True)])
         self.assertEqual(self.session.layout_groups, {1})
         self.assertIsNone(self.session.toc_group)
+        self.assertTrue(self.session.toc_dismissed)
+
+    def test_toc_dropped_because_it_is_no_longer_wanted_is_not_a_dismissal(self):
+        # The document shrank below the thresholds; it should come back when
+        # it grows again, unlike one the user closed.
+        self.manager.drop_toc(self.session)
+        self.assertFalse(self.session.toc_dismissed)
 
     def test_reconcile_closes_only_proven_owned_orphan(self):
         orphan = 99

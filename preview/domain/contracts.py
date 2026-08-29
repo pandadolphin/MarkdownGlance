@@ -50,6 +50,7 @@ class RenderSettings:
     remote_max_bytes: int = 10 * 1024 * 1024
     remote_max_dimension: int = 4096
     table_max_columns: int = 200
+    enable_toc: bool = False
     toc_minimum_length: int = 1200
     toc_minimum_headings: int = 3
     debug_logging: bool = False

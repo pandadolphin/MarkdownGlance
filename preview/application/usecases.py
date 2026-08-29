@@ -228,11 +228,24 @@ class UseCases:
             session.preview_surface,
             represent(document.body_html, session.theme, session.zoom, self.base_css),
         )
-        if toc_required(
-            len(self.source_snapshot(session, document.generation).markdown),
-            document.headings,
-            session.settings.toc_minimum_length,
-            session.settings.toc_minimum_headings,
+        if not session.settings.enable_toc:
+            # The setting is the stronger switch: while it is off a session's
+            # own dismissal means nothing, so turning the setting back on
+            # shows the table of contents rather than honouring an old close.
+            session.toc_dismissed = False
+        # Every render reaches here, so a table of contents the user closed
+        # has to stay closed: otherwise the next render -- a keystroke, or the
+        # viewport poll noticing the preview grew into the group just given
+        # back -- opens it again a moment later.
+        if (
+            session.settings.enable_toc
+            and not session.toc_dismissed
+            and toc_required(
+                len(self.source_snapshot(session, document.generation).markdown),
+                document.headings,
+                session.settings.toc_minimum_length,
+                session.settings.toc_minimum_headings,
+            )
         ):
             self._ensure_toc(session)
             self._present_toc(session)

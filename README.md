@@ -11,13 +11,14 @@ same window — no browser, no WebView, no external process.
 
 Above: one Sublime Text window. The preview, the Mermaid diagram and the
 aligned table are drawn by minihtml in an ordinary editor group, and the table
-of contents on the right is a second group that scrolls it.
+of contents on the right — `"enable_toc": true` — is a second group that
+scrolls it.
 
 ## Features
 
 - Live preview of saved and unsaved buffers, Side-by-Side or Full Screen.
 - Theme-aware styling that follows the active color scheme.
-- A separate, navigable table of contents.
+- A separate, navigable table of contents, off by default.
 - An outline of the Markdown source itself, with no preview open.
 - Per-session zoom.
 - Local images, and remote images fetched asynchronously under strict limits.
@@ -115,10 +116,12 @@ is untouched everywhere.
 [ADR 0010](docs/adr/0010-source-outline-and-ctrl-shift-b.md) records the
 decision.
 
-The table of contents inside the preview is a different thing and stays as it
-was: it is built from the rendered document, appears on its own once
-`toc_minimum_length` and `toc_minimum_headings` are met, and scrolls the
-preview rather than the source.
+The table of contents inside the preview is a different thing: it is built from
+the rendered document and scrolls the preview rather than the source. It is off
+by default, because it takes an editor group of its own — set `"enable_toc":
+true` and it appears once `toc_minimum_length` and `toc_minimum_headings` are
+both met. Closing its tab hides it for that preview alone, until the preview is
+closed and reopened.
 
 ## Settings
 

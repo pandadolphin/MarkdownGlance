@@ -93,6 +93,7 @@ def parse_settings(
             True,
             report,
         ),
+        enable_toc=_boolean(values, "enable_toc", defaults.enable_toc, report),
         toc_minimum_length=_number(
             values,
             "toc_minimum_length",

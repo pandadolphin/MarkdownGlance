@@ -6,6 +6,21 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`enable_toc`, and it defaults to `false`.** The table of contents beside
+  the preview takes an editor group of its own, which is a lot to spend without
+  being asked for; set it to `true` for the old behaviour, where a document
+  past `toc_minimum_length` and `toc_minimum_headings` gets one.
+
+### Changed
+
+- Closing the table of contents now keeps it closed for that preview. It used
+  to reappear within a second, because every render reopens one for a document
+  that qualifies and the viewport poll renders again as soon as the preview
+  grows into the group just given back. A close is remembered until the preview
+  itself is closed and reopened, or until `enable_toc` is switched off and on.
+
 ### Fixed
 
 - Closing the table of contents from its tab left its empty group behind. The

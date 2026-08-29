@@ -35,6 +35,13 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(settings.remote_max_dimension, 16)
         self.assertEqual(len(warnings), 2)
 
+    def test_toc_is_opt_in_and_switched_on_by_a_boolean(self):
+        self.assertFalse(RenderSettings().enable_toc)
+        self.assertTrue(parse_settings({"enable_toc": True}).enable_toc)
+        warnings = []
+        self.assertFalse(parse_settings({"enable_toc": "on"}, warnings.append).enable_toc)
+        self.assertEqual(len(warnings), 1)
+
     def test_settings_are_frozen(self):
         with self.assertRaises(Exception):
             RenderSettings().update_delay_ms = 1
