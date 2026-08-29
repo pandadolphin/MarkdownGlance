@@ -7,6 +7,12 @@
 Live Markdown preview for Sublime Text 4, rendered in an editor group of the
 same window — no browser, no WebView, no external process.
 
+![A design document previewed beside its own table of contents in Sublime Text: rendered headings, a monospace table and a Mermaid diagram on the left, a navigable TOC on the right](docs/screenshots/preview-and-toc.png)
+
+Above: one Sublime Text window. The preview, the Mermaid diagram and the
+aligned table are drawn by minihtml in an ordinary editor group, and the table
+of contents on the right is a second group that scrolls it.
+
 ## Features
 
 - Live preview of saved and unsaved buffers, Side-by-Side or Full Screen.
@@ -92,7 +98,7 @@ group of its own beside it — the headings as they are written, `#` markers and
 all, indented by level. It reads the buffer, not the preview, so it works with
 no preview open and on a file that has never been rendered.
 
-![The outline beside a Markdown source file](docs/features/toc-for-raw-md/toc-for-raw-md.png)
+![The outline of this README beside the file, headings indented by level with the one holding the caret highlighted](docs/screenshots/source-outline.png)
 
 The entry holding the caret is highlighted and the headings above it are
 marked, both following the caret as you move it; the list re-scans as you type.

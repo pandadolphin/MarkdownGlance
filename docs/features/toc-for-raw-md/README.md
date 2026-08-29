@@ -1,6 +1,6 @@
 # A table of contents for raw Markdown
 
-![The outline beside a Markdown source file](toc-for-raw-md.png)
+![The outline of the project README beside the file, headings indented by level with the one holding the caret highlighted](../../screenshots/source-outline.png)
 
 The preview's table of contents is built from the rendered document, so it
 needs a preview, a successful render and two thresholds before it appears, and
