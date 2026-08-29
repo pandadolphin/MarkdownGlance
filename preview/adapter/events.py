@@ -4,7 +4,12 @@ import sublime
 import sublime_plugin
 
 from ..presentation.phantom_view import OWNER_KEY
-from ..presentation.contexts import context_result, markdown_source, preview_focused
+from ..presentation.contexts import (
+    context_result,
+    markdown_source,
+    outline_focused,
+    preview_focused,
+)
 from .container import container
 
 CLOSE_COMMANDS = frozenset(
@@ -33,21 +38,41 @@ class SourceAndSurfaceListener(sublime_plugin.ViewEventListener):
         return True
 
     def on_modified_async(self):
-        _ui(lambda: container.loaded and container.usecases.source_modified(self.view))
+        def modified():
+            if not container.loaded:
+                return
+            container.usecases.source_modified(self.view)
+            container.outline.refresh_for_source(self.view)
+
+        _ui(modified)
+
+    def on_selection_modified_async(self):
+        _ui(lambda: container.loaded and container.outline.sync_caret(self.view))
 
     def on_post_save_async(self):
-        _ui(lambda: container.loaded and container.usecases.source_saved(self.view))
+        def saved():
+            if not container.loaded:
+                return
+            container.usecases.source_saved(self.view)
+            container.outline.source_renamed(self.view)
+
+        _ui(saved)
 
     def on_pre_close(self):
         if not container.loaded:
             return
         if self.view.settings().has(OWNER_KEY):
             surface_id = self.view.id()
-            _ui(
-                lambda: container.loaded
-                and container.manager.surface_closed(surface_id)
-            )
+
+            def closed():
+                if not container.loaded:
+                    return
+                if not container.outline.surface_closed(surface_id):
+                    container.manager.surface_closed(surface_id)
+
+            _ui(closed)
         else:
+            container.outline.source_closed(self.view)
             container.usecases.source_closed(self.view)
 
     def on_activated(self):
@@ -55,7 +80,9 @@ class SourceAndSurfaceListener(sublime_plugin.ViewEventListener):
             if not container.loaded or self.view.window() is None:
                 return
             window = self.view.window()
-            container.usecases.reconcile(window)
+            container.reconcile(window)
+            container.outline.source_renamed(self.view)
+            container.outline.refresh_source(self.view)
             session = container.manager.for_source(window.id(), self.view.buffer_id())
             if session is None:
                 return
@@ -86,6 +113,12 @@ class MarkdownGlanceEventListener(sublime_plugin.EventListener):
             return context_result(
                 preview_focused(window, container.backend), operator, operand
             )
+        if key == "mdglance.outline_focused":
+            return context_result(
+                outline_focused(window, container.outline.owns_surface),
+                operator,
+                operand,
+            )
         if key == "mdglance.markdown_source":
             return context_result(markdown_source(view), operator, operand)
         return None
@@ -97,9 +130,10 @@ class MarkdownGlanceEventListener(sublime_plugin.EventListener):
             container.layout.invalidate(window)
         if command_name in CLOSE_COMMANDS:
             container.clock.once_per_tick(
-                ("reconcile", window.id()), lambda: container.usecases.reconcile(window)
+                ("reconcile", window.id()), lambda: container.reconcile(window)
             )
 
     def on_pre_close_window(self, window):
         if container.loaded:
+            container.outline.close_window(window.id())
             container.usecases.window_closed(window)

@@ -1,14 +1,18 @@
 import bisect
 import json
 from dataclasses import dataclass
-from typing import Dict, Set, Tuple
+from typing import Dict, Optional, Set, Tuple
 
 from ..application.ports import GroupRole
 
 EPSILON = 1e-6
 
 
-ROLE_SHARE = {GroupRole.PREVIEW: 0.5, GroupRole.TOC: 0.35}
+ROLE_SHARE = {
+    GroupRole.PREVIEW: 0.5,
+    GroupRole.TOC: 0.35,
+    GroupRole.OUTLINE: 0.3,
+}
 
 
 @dataclass
@@ -21,6 +25,36 @@ class OwnedGroup:
 
 def fingerprint(layout: dict) -> str:
     return json.dumps(layout, sort_keys=True, separators=(",", ":"))
+
+
+def right_neighbour(layout: dict, group: int) -> Optional[int]:
+    """The group sharing this one's right edge and exact row span, if any."""
+    _, r0, c1, r1 = layout["cells"][group]
+    return next(
+        (
+            index
+            for index, cell in enumerate(layout["cells"])
+            if cell[0] == c1 and cell[1] == r0 and cell[3] == r1
+        ),
+        None,
+    )
+
+
+def rightmost_in_row(layout: dict, group: int) -> int:
+    """Walk right from a group until nothing sits beside it.
+
+    A surface anchored here always gets a group of its own: `LayoutOwner`
+    reuses an existing right neighbour rather than splitting again, so
+    anchoring on the source group would drop the outline into the preview's
+    group as a second tab.
+    """
+    current = group
+    for _ in range(len(layout["cells"])):
+        neighbour = right_neighbour(layout, current)
+        if neighbour is None:
+            break
+        current = neighbour
+    return current
 
 
 def split_cell(layout: dict, cell_index: int, new_share: float) -> Tuple[dict, int]:
@@ -54,16 +88,7 @@ class LayoutOwner:
         self, window, anchor_group: int, role: GroupRole, session_id: str
     ) -> int:
         layout = window.layout()
-        anchor = layout["cells"][anchor_group]
-        _, r0, c1, r1 = anchor
-        right_group = next(
-            (
-                index
-                for index, cell in enumerate(layout["cells"])
-                if cell[0] == c1 and cell[1] == r0 and cell[3] == r1
-            ),
-            None,
-        )
+        right_group = right_neighbour(layout, anchor_group)
         owned = self._owned.setdefault(window.id(), {})
         if right_group is not None:
             if right_group in owned:
@@ -76,6 +101,14 @@ class LayoutOwner:
             new_group, previous, fingerprint(updated), {session_id}
         )
         return new_group
+
+    def acquire_beside(
+        self, window, anchor_group: int, role: GroupRole, session_id: str
+    ) -> int:
+        """Acquire a group of this surface's own, never an existing neighbour."""
+        return self.acquire(
+            window, rightmost_in_row(window.layout(), anchor_group), role, session_id
+        )
 
     def is_owned(self, window, group: int) -> bool:
         return group in self._owned.get(window.id(), {})

@@ -78,6 +78,16 @@ class Heading:
     position_ratio: float
 
 
+@dataclass(frozen=True)
+class SourceHeading:
+    """A heading located in the Markdown source, before any rendering."""
+
+    level: int
+    text: str
+    ordinal: int
+    line: int
+
+
 class DiagnosticStage(Enum):
     PARSE = "parse"
     STRUCTURE = "structure"

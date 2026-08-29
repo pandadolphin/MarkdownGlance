@@ -12,6 +12,7 @@ same window — no browser, no WebView, no external process.
 - Live preview of saved and unsaved buffers, Side-by-Side or Full Screen.
 - Theme-aware styling that follows the active color scheme.
 - A separate, navigable table of contents.
+- An outline of the Markdown source itself, with no preview open.
 - Per-session zoom.
 - Local images, and remote images fetched asynchronously under strict limits.
 - GFM tables, typeset to the measured width of the preview.
@@ -48,6 +49,7 @@ Side** from the Command Palette.
 | --- | --- |
 | MarkdownGlance: Open Preview to the Side | `Ctrl+K`, then `V` |
 | MarkdownGlance: Toggle Preview | `Ctrl+Shift+V` |
+| MarkdownGlance: Toggle Outline | `Ctrl+Shift+B` |
 | MarkdownGlance: Zoom In / Out / Reset Zoom | `Ctrl+=`, `Ctrl+-`, `Ctrl+0` |
 | Preferences: MarkdownGlance Settings | — |
 | Preferences: MarkdownGlance Key Bindings | — |
@@ -82,6 +84,35 @@ The open and toggle commands also work while an owned preview has focus.
 Closing the source closes its preview; closing the preview never closes or
 recreates the source. A group created by the plugin is restored only if its
 layout has not been changed since.
+
+## Outline of the source
+
+`Ctrl+Shift+B` opens an outline of the Markdown file you are editing, in a
+group of its own beside it — the headings as they are written, `#` markers and
+all, indented by level. It reads the buffer, not the preview, so it works with
+no preview open and on a file that has never been rendered.
+
+![The outline beside a Markdown source file](docs/features/toc-for-raw-md/toc-for-raw-md.png)
+
+The entry holding the caret is highlighted and the headings above it are
+marked, both following the caret as you move it; the list re-scans as you type.
+Clicking an entry moves the caret to that heading and centres it, leaving focus
+in the outline so you can keep clicking. The key toggles the way Zed's outline
+panel does: it opens and focuses, focuses if it is already open, and closes on
+a press from inside it. Each file gets its own outline, which closes with its
+source.
+
+This shadows one more Sublime Text default: `Ctrl+Shift+B` is **Build With…**,
+and the binding applies only while a Markdown source view or an outline this
+package created is focused. Markdown has no build system, and plain `Ctrl+B`
+is untouched everywhere.
+[ADR 0010](docs/adr/0010-source-outline-and-ctrl-shift-b.md) records the
+decision.
+
+The table of contents inside the preview is a different thing and stays as it
+was: it is built from the rendered document, appears on its own once
+`toc_minimum_length` and `toc_minimum_headings` are met, and scrolls the
+preview rather than the source.
 
 ## Settings
 

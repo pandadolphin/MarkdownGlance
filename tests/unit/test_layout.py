@@ -2,7 +2,11 @@ import copy
 import unittest
 
 from MarkdownGlance.preview.application.ports import GroupRole
-from MarkdownGlance.preview.presentation.layout import LayoutOwner, split_cell
+from MarkdownGlance.preview.presentation.layout import (
+    LayoutOwner,
+    rightmost_in_row,
+    split_cell,
+)
 
 
 class FakeWindow:
@@ -51,6 +55,25 @@ class LayoutTest(unittest.TestCase):
         }
         result, _ = split_cell(layout, 0, 0.5)
         self.assertEqual(result["cols"], layout["cols"])
+
+    def test_rightmost_in_row_walks_past_every_neighbour(self):
+        layout = {
+            "cols": [0.0, 0.3, 0.6, 1.0],
+            "rows": [0.0, 1.0],
+            "cells": [[0, 0, 1, 1], [1, 0, 2, 1], [2, 0, 3, 1]],
+        }
+        self.assertEqual(rightmost_in_row(layout, 0), 2)
+        self.assertEqual(rightmost_in_row(layout, 2), 2)
+        self.assertEqual(rightmost_in_row(ONE, 0), 0)
+
+    def test_acquire_beside_never_shares_an_existing_group(self):
+        window = FakeWindow(ONE)
+        owner = LayoutOwner()
+        preview = owner.acquire(window, 0, GroupRole.PREVIEW, "preview")
+        outline = owner.acquire_beside(window, 0, GroupRole.OUTLINE, "outline")
+        self.assertNotEqual(outline, preview)
+        self.assertTrue(owner.is_owned(window, outline))
+        self.assertEqual(len(window.layout()["cells"]), 3)
 
     def test_owner_restores_only_exact_empty_layout(self):
         window = FakeWindow(ONE)

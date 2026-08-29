@@ -26,7 +26,14 @@ forward-compatibility testing.
    and custom HTTPS server. Confirm diagnostics contain no source or locator.
 8. Close TOC, preview, source, group and window; reload the plugin. Change the
    layout after preview creation and confirm it is not overwritten on close.
-9. Install beside MarkdownLivePreview. Check directory, module, command,
+9. Outline: open with `Ctrl+Shift+B` on a file with no preview, and again with
+   a preview open — it must take a group of its own, never a tab in the
+   preview's. Check ATX, setext, fenced-code and front-matter documents and one
+   with no headings; move the caret across headings; type a new heading and
+   watch it appear; click entries top, middle and bottom; toggle focus and
+   close; zoom; close the outline, the source, the group and the window; open
+   outlines for two files at once and switch between them.
+10. Install beside MarkdownLivePreview. Check directory, module, command,
    settings and resource isolation; document the expected shortcut collision.
 
 ## Automated prerequisites

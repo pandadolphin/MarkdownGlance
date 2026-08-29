@@ -14,6 +14,7 @@ class NavigationCapability(Enum):
 class GroupRole(Enum):
     PREVIEW = "preview"
     TOC = "toc"
+    OUTLINE = "outline"
 
 
 @dataclass(frozen=True)

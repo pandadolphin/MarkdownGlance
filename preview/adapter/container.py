@@ -5,6 +5,7 @@ from typing import Optional
 
 import sublime
 
+from ..application.outline import OutlineController
 from ..application.render_pipeline import render
 from ..application.scheduler import GenerationScheduler
 from ..application.session import CloseCause, PreviewSession
@@ -20,6 +21,7 @@ from ..renderer.tables import budgets
 from .clock import SublimeClock
 from .executors import OwnedExecutors
 from .settings import SettingsAdapter
+from .source_access import caret_row, read_source, reveal_line
 from .theme import theme_snapshot
 
 # ST reports no view-resize event, so a maximised or dragged window is noticed
@@ -39,6 +41,7 @@ class Container:
         self.backend = None
         self.layout = None
         self.manager = None
+        self.outline = None
         self.scheduler = None
         self.usecases = None
         self.settings = None
@@ -72,6 +75,8 @@ class Container:
             self.resolver,
             _window,
             self.detach_theme,
+            lambda surface_id: self.outline is not None
+            and self.outline.owns_surface(surface_id),
         )
         self.scheduler = GenerationScheduler(
             self.manager.get,
@@ -86,6 +91,18 @@ class Container:
         base_css = sublime.load_resource(
             "Packages/MarkdownGlance/resources/preview.css"
         )
+        self.outline = OutlineController(
+            self.backend,
+            self.layout,
+            self.clock,
+            _window,
+            self.settings.get,
+            theme_snapshot,
+            read_source,
+            caret_row,
+            reveal_line,
+            base_css,
+        )
         self.usecases = UseCases(
             self.manager,
             self.scheduler,
@@ -99,8 +116,14 @@ class Container:
         )
         self.loaded = True
         for window in sublime.windows():
-            self.usecases.reconcile(window)
+            self.reconcile(window)
         self._watch_viewports()
+
+    def reconcile(self, window) -> None:
+        """Both registries sweep the same window; the outline's must run first
+        so that its surfaces are still claimed when the preview sweep looks."""
+        self.outline.reconcile(window)
+        self.usecases.reconcile(window)
 
     def policy(self) -> NetworkPolicy:
         return NetworkPolicy(self.settings.get(), self.policy_revision)
@@ -222,6 +245,10 @@ class Container:
                 self.usecases.navigate(
                     window, args.get("token", ""), args.get("slug", "")
                 )
+            elif command == "mdglance_outline_navigate":
+                self.outline.navigate(
+                    window, args.get("token", ""), args.get("line", -1)
+                )
             elif command == "mdglance_open_relative":
                 self.usecases.open_relative(
                     window, args.get("token", ""), args.get("path", -1)
@@ -237,6 +264,7 @@ class Container:
         if not self.loaded:
             return
         self.settings.detach()
+        self.outline.close_all()
         self.manager.close_all(CloseCause.UNLOAD)
         self.executors.shutdown()
         self.loaded = False

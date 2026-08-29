@@ -243,3 +243,71 @@ p.mermaid-diagram {
 p.mermaid-diagram img {
     margin: 0;
 }
+
+/* The source outline: raw heading markers, indented by level, the way an
+   outline panel shows them beside the file rather than inside the preview. */
+.source-outline {
+    display: block;
+    font-family: "DejaVu Sans Mono", "Liberation Mono", "Consolas", monospace;
+    line-height: 1.5rem;
+    padding: 0.2rem 0;
+}
+
+.source-outline-empty {
+    display: block;
+    color: var(--preview-muted);
+}
+
+.source-outline-level-1,
+.source-outline-level-2,
+.source-outline-level-3,
+.source-outline-level-4,
+.source-outline-level-5,
+.source-outline-level-6 {
+    display: block;
+    margin: 0.1rem 0;
+    padding: 0.05rem 0.3rem;
+}
+
+.source-outline-level-2 {
+    padding-left: 1.3rem;
+}
+
+.source-outline-level-3 {
+    padding-left: 2.6rem;
+}
+
+.source-outline-level-4 {
+    padding-left: 3.9rem;
+}
+
+.source-outline-level-5 {
+    padding-left: 5.2rem;
+}
+
+.source-outline-level-6 {
+    padding-left: 6.5rem;
+}
+
+.source-outline a {
+    color: var(--foreground);
+    text-decoration: none;
+}
+
+.source-outline-marker {
+    color: var(--preview-link);
+}
+
+/* The row holding the caret, and the chain of headings above it. */
+.source-outline-active {
+    background-color: var(--preview-surface-strong);
+}
+
+.source-outline-active a,
+.source-outline-ancestor a {
+    color: var(--foreground);
+}
+
+.source-outline-ancestor {
+    background-color: var(--preview-surface);
+}

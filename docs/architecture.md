@@ -12,6 +12,16 @@ The selected backend is a read-only scratch `View` containing one block
 ownership is fingerprinted; restoration occurs only for an empty, unchanged,
 plugin-created group after its last holder closes.
 
+A second, independent surface is the source outline: `renderer/outline.py`
+scans raw Markdown for ATX and setext headings by line, and
+`application/outline.py` owns one outline per source buffer, keyed on
+`(window, buffer)`, reaching the host only through injected read-text,
+read-caret and reveal-line callables. It shares the backend, the layout owner
+and the stylesheet with the preview, and nothing else: no render, no assets, no
+generations. `SessionManager.reconcile` asks `foreign_surface` before closing an
+owned surface it does not recognise, which is how outline surfaces survive a
+sweep run for previews.
+
 ## Reliability and safety
 
 Each immutable `RenderRequest` contains a generation. A session has at most one

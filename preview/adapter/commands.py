@@ -9,10 +9,23 @@ import sublime_plugin
 from .container import container
 
 
+def _active_view(window):
+    sheet = window.active_sheet()
+    return sheet.view() if sheet is not None else None
+
+
+def _owned_outline(window):
+    view = _active_view(window)
+    return (
+        container.outline.for_surface(view.id())
+        if view is not None and container.outline
+        else None
+    )
+
+
 def _owned_session(window):
     # Sheets and views have separate id spaces; surfaces are keyed by view id.
-    sheet = window.active_sheet()
-    view = sheet.view() if sheet is not None else None
+    view = _active_view(window)
     return (
         container.manager.for_surface(view.id())
         if view is not None and container.manager
@@ -22,7 +35,7 @@ def _owned_session(window):
 
 class MdglanceOpenSideBySideCommand(sublime_plugin.WindowCommand):
     def run(self):
-        container.usecases.reconcile(self.window)
+        container.reconcile(self.window)
         session = _owned_session(self.window)
         if session is not None:
             from ..domain.contracts import PreviewMode
@@ -54,12 +67,43 @@ class MdglanceToggleFullScreenCommand(sublime_plugin.WindowCommand):
         )
 
 
+class MdglanceToggleOutlineCommand(sublime_plugin.WindowCommand):
+    """Zed's outline panel, over the Markdown source rather than the preview."""
+
+    def run(self):
+        if not container.loaded:
+            return
+        container.reconcile(self.window)
+        container.outline.toggle(self.window)
+
+    def is_enabled(self):
+        if not container.loaded:
+            return False
+        view = _active_view(self.window)
+        return bool(_owned_outline(self.window)) or bool(
+            view and view.match_selector(0, "text.html.markdown")
+        )
+
+
+class MdglanceOutlineNavigateCommand(sublime_plugin.WindowCommand):
+    def run(self, token="", line=-1, event=None):
+        if container.loaded:
+            container.outline.navigate(self.window, token, line)
+
+
 class MdglanceZoomCommand(sublime_plugin.WindowCommand):
     def run(self, delta=0.0, reset=False):
+        if not container.loaded:
+            return
+        if container.outline.adjust_zoom(self.window, float(delta), bool(reset)):
+            return
         container.usecases.adjust_zoom(self.window, float(delta), bool(reset))
 
     def is_enabled(self):
-        return bool(container.loaded and _owned_session(self.window))
+        return bool(
+            container.loaded
+            and (_owned_session(self.window) or _owned_outline(self.window))
+        )
 
 
 class MdglanceNavigateCommand(sublime_plugin.WindowCommand):

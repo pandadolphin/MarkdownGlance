@@ -14,12 +14,16 @@ class SessionManager:
         resolver,
         window_for_id: Callable[[int], object],
         on_session_close: Callable[[PreviewSession], None] = lambda session: None,
+        foreign_surface: Callable[[int], bool] = lambda surface_id: False,
     ) -> None:
         self.backend = backend
         self.layout_owner = layout_owner
         self.resolver = resolver
         self.window_for_id = window_for_id
         self.on_session_close = on_session_close
+        # Outline surfaces carry the same owner marker but belong to another
+        # controller, so they must survive this manager's orphan sweep.
+        self.foreign_surface = foreign_surface
         self._by_id: Dict[str, PreviewSession] = {}
         self._by_source: Dict[Tuple[int, int], str] = {}
         self._by_surface: Dict[int, str] = {}
@@ -158,5 +162,5 @@ class SessionManager:
                 self.drop_toc(session)
         registered = set(self._by_surface)
         for handle in live_handles:
-            if handle.id not in registered:
+            if handle.id not in registered and not self.foreign_surface(handle.id):
                 self.backend.close(handle)

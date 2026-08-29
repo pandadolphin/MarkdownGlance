@@ -15,6 +15,16 @@
         "context": [{"key": "mdglance.preview_focused", "operator": "equal", "operand": true}]
     },
     {
+        "keys": ["ctrl+shift+b"],
+        "command": "mdglance_toggle_outline",
+        "context": [{"key": "mdglance.markdown_source", "operator": "equal", "operand": true}]
+    },
+    {
+        "keys": ["ctrl+shift+b"],
+        "command": "mdglance_toggle_outline",
+        "context": [{"key": "mdglance.outline_focused", "operator": "equal", "operand": true}]
+    },
+    {
         "keys": ["ctrl+="],
         "command": "mdglance_zoom",
         "args": {"delta": 0.1},

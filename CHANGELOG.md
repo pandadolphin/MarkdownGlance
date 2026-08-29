@@ -6,6 +6,20 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **An outline of the Markdown source**, on `Ctrl+Shift+B` / `Cmd+Shift+B` and
+  as `MarkdownGlance: Toggle Outline` in the command palette. It lists the
+  headings as they are written in the buffer, in a group of its own beside the
+  file, marks the one holding the caret, re-scans as you type, and moves the
+  caret to a heading when its entry is clicked. It needs no preview and no
+  successful render, which is what separates it from the table of contents
+  inside the preview. The key toggles the way Zed's outline panel does — open
+  and focus, focus, then close from inside — and shadows Sublime Text's
+  **Build With…** only while a Markdown source view or an outline this package
+  created is focused. See
+  [ADR 0010](docs/adr/0010-source-outline-and-ctrl-shift-b.md).
+
 ## [0.1.4] - 2026-08-29
 
 ### Changed

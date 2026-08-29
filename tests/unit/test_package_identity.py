@@ -13,9 +13,16 @@ PLATFORMS = ("Linux", "OSX", "Windows")
 # Sublime names the "=" and "-" keys on macOS; the literal characters Linux and
 # Windows accept never match there, so the OSX keymap must spell them out.
 MACOS_KEY_NAMES = {"=": "equals", "-": "minus"}
-# ADR 0009: the Full Screen toggle deliberately shadows paste_and_indent while
-# a Markdown source view is focused. Nothing else may cost the user a key.
-SINGLE_STROKE_OUTSIDE_PREVIEW = frozenset({"ctrl+shift+v", "super+shift+v"})
+# ADR 0009: the Full Screen toggle deliberately shadows paste_and_indent, and
+# ADR 0010: the outline toggle shadows Build With…, both only while a Markdown
+# source view is focused. Nothing else may cost the user a key.
+SINGLE_STROKE_OUTSIDE_PREVIEW = frozenset(
+    {"ctrl+shift+v", "super+shift+v", "ctrl+shift+b", "super+shift+b"}
+)
+# Contexts that are true only inside a view this package created.
+OWN_SURFACE_CONTEXTS = frozenset(
+    {"mdglance.preview_focused", "mdglance.outline_focused"}
+)
 
 
 def as_macos_key(key):
@@ -87,7 +94,7 @@ class PackageIdentityTest(unittest.TestCase):
             for item in self.load(name):
                 contexts = {entry["key"] for entry in item.get("context", ())}
                 keys = item["keys"]
-                if contexts == {"mdglance.preview_focused"} or len(keys) > 1:
+                if (contexts and contexts <= OWN_SURFACE_CONTEXTS) or len(keys) > 1:
                     continue
                 self.assertIn(keys[0], SINGLE_STROKE_OUTSIDE_PREVIEW, (name, keys))
 
