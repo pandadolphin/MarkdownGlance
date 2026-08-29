@@ -6,6 +6,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-29
+
 ### Added
 
 - **An outline of the Markdown source**, on `Ctrl+Shift+B` / `Cmd+Shift+B` and
@@ -102,7 +104,8 @@ First public release.
 - `MarkdownGlance: Copy Diagnostics`, which redacts source text, paths, URLs
   and Mermaid payloads.
 
-[Unreleased]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.4...HEAD
+[Unreleased]: https://github.com/pandadolphin/MarkdownGlance/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.4...0.2.0
 [0.1.4]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.1...0.1.2

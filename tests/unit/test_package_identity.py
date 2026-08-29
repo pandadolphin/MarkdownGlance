@@ -141,7 +141,11 @@ class PackageIdentityTest(unittest.TestCase):
         classes = {
             node.name: node for node in module.body if isinstance(node, ast.ClassDef)
         }
-        for name in ("MdglanceNavigateCommand", "MdglanceOpenRelativeCommand"):
+        for name in (
+            "MdglanceNavigateCommand",
+            "MdglanceOpenRelativeCommand",
+            "MdglanceOutlineNavigateCommand",
+        ):
             run = next(
                 node
                 for node in classes[name].body

@@ -121,7 +121,7 @@ class MdglanceCopyDiagnosticsCommand(sublime_plugin.WindowCommand):
         settings = container.settings.get()
         payload = {
             "package": "MarkdownGlance",
-            "version": "0.1.4",
+            "version": "0.2.0",
             "sublime_build": sublime.version(),
             "platform": sublime.platform(),
             "architecture": sublime.arch(),
