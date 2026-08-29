@@ -6,6 +6,17 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-29
+
+### Changed
+
+- Documentation only; no code, settings or key bindings change. The README now
+  opens with a screenshot of the preview, its Mermaid diagram, an aligned table
+  and the table of contents beside them, and the outline screenshot shows the
+  outline reading this repository's own README. Both images live in
+  `docs/screenshots/`, which `export-ignore` keeps out of the installed
+  package.
+
 ## [0.2.0] - 2026-08-29
 
 ### Added
@@ -104,7 +115,8 @@ First public release.
 - `MarkdownGlance: Copy Diagnostics`, which redacts source text, paths, URLs
   and Mermaid payloads.
 
-[Unreleased]: https://github.com/pandadolphin/MarkdownGlance/compare/0.2.0...HEAD
+[Unreleased]: https://github.com/pandadolphin/MarkdownGlance/compare/0.2.1...HEAD
+[0.2.1]: https://github.com/pandadolphin/MarkdownGlance/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.4...0.2.0
 [0.1.4]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.2...0.1.3
