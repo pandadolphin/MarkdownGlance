@@ -117,8 +117,16 @@ class SessionManager:
         if handle is None:
             return
         self._by_surface.pop(handle.id, None)
+        # The view is usually already gone by the time this runs — the user
+        # clicked the tab's close button, or `present` closed it — and a dead
+        # handle has no group. Fall back to the one the surface was placed in,
+        # or the group it left behind is never released and the empty pane
+        # stays on screen.
         group = self.backend.group_of(handle)
+        if group is None:
+            group = session.toc_group
         session.toc_surface = None
+        session.toc_group = None
         if group is not None:
             session.layout_groups.discard(group)
             window = self.window_for_id(session.window_id)

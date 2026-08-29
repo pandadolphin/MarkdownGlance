@@ -184,6 +184,7 @@ class UseCases:
             )
             if self.layout_owner.is_owned(window, toc_group):
                 session.layout_groups.add(toc_group)
+            session.toc_group = toc_group
             self.backend.move(session.toc_surface, toc_group)
             self.backend.reveal(session.toc_surface)
         session.mode = mode
@@ -207,6 +208,7 @@ class UseCases:
         )
         if self.layout_owner.is_owned(window, toc_group):
             session.layout_groups.add(toc_group)
+        session.toc_group = toc_group
         session.toc_surface = self.backend.create(
             window, toc_group, "TOC: {}".format(session.source_name), session.id
         )

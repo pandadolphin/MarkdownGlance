@@ -6,6 +6,14 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Closing the table of contents from its tab left its empty group behind. The
+  group was released by asking the backend which group the surface was in, but
+  the view is already gone by then and a dead handle has no group, so nothing
+  was released and the pane stayed on screen. The session now records the group
+  it placed the table of contents in and falls back to it.
+
 ## [0.2.1] - 2026-08-29
 
 ### Changed
