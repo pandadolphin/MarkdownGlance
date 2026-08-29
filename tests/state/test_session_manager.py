@@ -28,6 +28,9 @@ class FakeBackend:
         return [SurfaceHandle("fake", item, window.id()) for item in self.alive]
 
     def group_of(self, handle):
+        # A closed view has no group, exactly as the real backend reports it.
+        if handle.id not in self.alive:
+            return None
         return 2 if handle.id == 11 else 1
 
 
@@ -67,6 +70,7 @@ def session():
         successful_generation=1,
         last_document=object(),
         layout_groups={1, 2},
+        toc_group=2,
     )
 
 
@@ -102,6 +106,22 @@ class SessionManagerTest(unittest.TestCase):
         self.manager.surface_closed(11)
         self.assertIs(self.manager.get("s"), self.session)
         self.assertIsNone(self.session.toc_surface)
+
+    def test_toc_closed_by_user_releases_its_group(self):
+        # The view is gone before the close is dispatched, so the group has to
+        # come from the session; otherwise the empty pane stays on screen.
+        self.backend.alive.discard(11)
+        self.manager.surface_closed(11)
+        self.assertEqual(self.layout.releases, [(2, True)])
+        self.assertEqual(self.session.layout_groups, {1})
+        self.assertIsNone(self.session.toc_group)
+        self.assertTrue(self.session.toc_dismissed)
+
+    def test_toc_dropped_because_it_is_no_longer_wanted_is_not_a_dismissal(self):
+        # The document shrank below the thresholds; it should come back when
+        # it grows again, unlike one the user closed.
+        self.manager.drop_toc(self.session)
+        self.assertFalse(self.session.toc_dismissed)
 
     def test_reconcile_closes_only_proven_owned_orphan(self):
         orphan = 99

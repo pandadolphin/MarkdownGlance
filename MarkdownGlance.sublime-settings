@@ -17,7 +17,11 @@
     // upper bound, for keeping tables readable on a very wide screen.
     "table_max_columns": 200,
 
-    // A separate TOC is shown only when both thresholds are met.
+    // The TOC beside the preview is opt-in: it takes a group of its own.
+    // Closing its tab hides it for that preview only, until it is reopened.
+    "enable_toc": false,
+
+    // With it on, a TOC is shown only when both thresholds are met.
     "toc_minimum_length": 1200,
     "toc_minimum_headings": 3,
 

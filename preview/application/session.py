@@ -48,6 +48,13 @@ class PreviewSession:
     last_document: Optional[PreviewDocument] = None
     pending_assets: FrozenSet[AssetKey] = frozenset()
     layout_groups: Set[int] = field(default_factory=set)
+    # The group the table of contents was placed in. Held separately from
+    # `layout_groups` because the surface has to be released by group after
+    # its view is gone, when the backend can no longer report one.
+    toc_group: Optional[int] = None
+    # Set once the user closes the table of contents, so that the next render
+    # does not put it straight back. Cleared only by a new session.
+    toc_dismissed: bool = False
     action_token: str = ""
     settings: RenderSettings = field(default_factory=RenderSettings)
     theme: ThemeSnapshot = field(default_factory=ThemeSnapshot)

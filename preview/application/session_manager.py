@@ -112,13 +112,28 @@ class SessionManager:
                 self.layout_owner.release(window, group, session.id, restore=restore)
         self._remove(session)
 
-    def drop_toc(self, session: PreviewSession) -> None:
+    def drop_toc(self, session: PreviewSession, dismissed: bool = False) -> None:
+        """Forget the table of contents and give its group back.
+
+        `dismissed` says the user closed it, rather than the document having
+        shrunk below the threshold that asks for one; a dismissed table of
+        contents stays gone for the life of the session.
+        """
         handle = session.toc_surface
         if handle is None:
             return
         self._by_surface.pop(handle.id, None)
+        # The view is usually already gone by the time this runs — the user
+        # clicked the tab's close button, or `present` closed it — and a dead
+        # handle has no group. Fall back to the one the surface was placed in,
+        # or the group it left behind is never released and the empty pane
+        # stays on screen.
         group = self.backend.group_of(handle)
+        if group is None:
+            group = session.toc_group
         session.toc_surface = None
+        session.toc_group = None
+        session.toc_dismissed = session.toc_dismissed or dismissed
         if group is not None:
             session.layout_groups.discard(group)
             window = self.window_for_id(session.window_id)
@@ -137,7 +152,7 @@ class SessionManager:
         if session is None:
             return
         if session.toc_surface is not None and session.toc_surface.id == surface_id:
-            self.drop_toc(session)
+            self.drop_toc(session, dismissed=True)
         else:
             self.close(session, CloseCause.PREVIEW_CLOSED_BY_USER)
 
@@ -159,7 +174,7 @@ class SessionManager:
             ):
                 self.close(session, CloseCause.PREVIEW_CLOSED_BY_USER)
             elif session.toc_surface is not None and session.toc_surface.id not in live:
-                self.drop_toc(session)
+                self.drop_toc(session, dismissed=True)
         registered = set(self._by_surface)
         for handle in live_handles:
             if handle.id not in registered and not self.foreign_surface(handle.id):

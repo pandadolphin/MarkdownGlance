@@ -224,7 +224,9 @@ class Resolver:
         pass
 
 
-class UseCasesTest(unittest.TestCase):
+class Fixture(unittest.TestCase):
+    """One window, one Markdown source, fakes for everything Sublime owns."""
+
     def setUp(self):
         self.source = View(10, filename=os.path.join(BASE, "source.md"))
         self.window = Window(1, self.source)
@@ -250,6 +252,8 @@ class UseCasesTest(unittest.TestCase):
             "",
         )
 
+
+class UseCasesTest(Fixture):
     def test_open_repeat_open_and_switch_modes_keep_one_session(self):
         self.usecases.open_side_by_side(self.window)
         session = self.manager.for_source(1, 10)
@@ -370,6 +374,89 @@ class UseCasesTest(unittest.TestCase):
         self.usecases.navigate(self.window, session.action_token, "missing")
 
         self.assertEqual(self.backend.navigations, [])
+
+
+class Snapshot:
+    def __init__(self, markdown):
+        self.markdown = markdown
+
+
+class TocLifecycleTest(Fixture):
+    """A table of contents is opened by a render, so it is closed by one too."""
+
+    LONG = "#" * 4000
+
+    def setUp(self):
+        super().setUp()
+        self.usecases.source_snapshot = lambda session, generation: Snapshot(self.LONG)
+        self.settings = RenderSettings(enable_toc=True)
+        self.usecases.settings_provider = lambda: self.settings
+
+    def document(self):
+        return PreviewDocument(
+            1,
+            "<p>body</p>",
+            tuple(
+                Heading(2, "H{}".format(index), "h{}".format(index), index, 0.1 * index)
+                for index in range(4)
+            ),
+            (),
+            (),
+            (),
+        )
+
+    def open(self):
+        self.usecases.open_side_by_side(self.window)
+        session = self.manager.for_source(1, 10)
+        session.settings = self.settings
+        session.last_document = self.document()
+        self.usecases.present(session, session.last_document)
+        return session
+
+    def test_render_opens_a_table_of_contents_beside_the_preview(self):
+        session = self.open()
+        self.assertIsNotNone(session.toc_surface)
+        self.assertEqual(self.backend.roles[session.toc_surface.id], "toc")
+
+    def test_a_closed_table_of_contents_is_not_reopened_by_the_next_render(self):
+        session = self.open()
+        toc_id = session.toc_surface.id
+        self.backend.close(session.toc_surface)
+        self.manager.surface_closed(toc_id)
+        self.assertIsNone(session.toc_surface)
+
+        self.usecases.present(session, session.last_document)
+
+        self.assertIsNone(session.toc_surface)
+        self.assertTrue(session.toc_dismissed)
+
+    def test_the_setting_closes_a_table_of_contents_that_is_already_open(self):
+        session = self.open()
+        toc_id = session.toc_surface.id
+        session.settings = RenderSettings(enable_toc=False)
+
+        self.usecases.present(session, session.last_document)
+
+        self.assertIsNone(session.toc_surface)
+        self.assertIn(toc_id, self.backend.closed)
+
+    def test_the_setting_off_opens_none_at_all(self):
+        self.settings = RenderSettings()
+        session = self.open()
+        self.assertIsNone(session.toc_surface)
+
+    def test_turning_the_setting_back_on_outlives_a_close(self):
+        # The setting is the stronger switch, so it clears the session's own
+        # dismissal rather than leaving the preview permanently without one.
+        session = self.open()
+        self.manager.surface_closed(session.toc_surface.id)
+        session.settings = RenderSettings(enable_toc=False)
+        self.usecases.present(session, session.last_document)
+        session.settings = RenderSettings(enable_toc=True)
+
+        self.usecases.present(session, session.last_document)
+
+        self.assertIsNotNone(session.toc_surface)
 
 
 if __name__ == "__main__":
