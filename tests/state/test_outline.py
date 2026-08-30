@@ -3,6 +3,7 @@ import unittest
 from MarkdownGlance.preview.application.outline import OutlineController
 from MarkdownGlance.preview.application.ports import GroupRole, SurfaceHandle
 from MarkdownGlance.preview.domain.contracts import RenderSettings, ThemeSnapshot
+from MarkdownGlance.preview.renderer.measure import outline_width_px
 
 SOURCE = "# One\n\ntext\n\n## Two\n\nmore\n"
 
@@ -81,6 +82,7 @@ class Backend:
         self.next_id = 100
         self.alive = set()
         self.html = {}
+        self.groups = {}
         self.roles = {}
         self.titles = {}
         self.focused = []
@@ -91,7 +93,11 @@ class Backend:
         self.next_id += 1
         self.alive.add(self.next_id)
         self.titles[self.next_id] = title
+        self.groups[self.next_id] = group
         return SurfaceHandle("fake", self.next_id, window.id())
+
+    def group_of(self, handle):
+        return self.groups.get(handle.id)
 
     def set_role(self, handle, role):
         self.roles[handle.id] = role
@@ -123,11 +129,15 @@ class Layout:
     def __init__(self):
         self.acquired = []
         self.released = []
+        self.fitted = []
         self.owned = True
 
-    def acquire_beside(self, window, anchor_group, role, session_id):
-        self.acquired.append((anchor_group, role, session_id))
+    def acquire_beside(self, window, anchor_group, role, session_id, width_px=0.0):
+        self.acquired.append((anchor_group, role, session_id, width_px))
         return 1
+
+    def fit(self, window, group, role, width_px):
+        self.fitted.append((group, role, width_px))
 
     def is_owned(self, window, group):
         return self.owned
@@ -167,12 +177,13 @@ class OutlineControllerTest(unittest.TestCase):
         self.source = self.window.add(View(1, self.window))
         self.window.active = self.source
         self.reveals = []
+        self.settings = RenderSettings(update_delay_ms=50)
         self.controller = OutlineController(
             self.backend,
             self.layout,
             self.clock,
             lambda window_id: self.window if window_id == 1 else None,
-            lambda: RenderSettings(update_delay_ms=50),
+            lambda: self.settings,
             lambda view: ThemeSnapshot(),
             lambda view: view.text,
             lambda view: view.row,
@@ -196,12 +207,41 @@ class OutlineControllerTest(unittest.TestCase):
         handle = self.surface()
         self.assertIsNotNone(handle)
         session = self.controller.for_surface(handle.id)
-        self.assertEqual(self.layout.acquired, [(0, GroupRole.OUTLINE, session.id)])
+        self.assertEqual(
+            [item[:3] for item in self.layout.acquired],
+            [(0, GroupRole.OUTLINE, session.id)],
+        )
         self.assertEqual(self.backend.roles[handle.id], "outline")
         self.assertEqual(self.backend.titles[handle.id], "Outline: doc.md")
         self.assertEqual(self.backend.focused, [handle.id])
         self.assertIn("source-outline", self.backend.html[handle.id])
         self.assertIn("/* css */", self.backend.html[handle.id])
+
+    def test_the_group_is_asked_for_the_width_the_entries_need(self):
+        self.controller.toggle(self.window)
+        session = self.controller.for_surface(self.surface().id)
+        wanted = outline_width_px(session.headings, 16)
+        self.assertGreater(wanted, 0.0)
+        self.assertAlmostEqual(self.layout.acquired[0][3], wanted)
+        self.assertEqual(self.layout.fitted, [(1, GroupRole.OUTLINE, wanted)])
+
+    def test_an_edit_re_fits_the_group(self):
+        self.controller.toggle(self.window)
+        self.source.text = "# One\n\n## A much longer heading than before\n"
+        self.controller.refresh_for_source(self.source)
+        self.clock.run_all()
+        session = self.controller.for_surface(self.surface().id)
+        self.assertEqual(
+            self.layout.fitted[-1],
+            (1, GroupRole.OUTLINE, outline_width_px(session.headings, 16)),
+        )
+        self.assertGreater(self.layout.fitted[-1][2], self.layout.fitted[0][2])
+
+    def test_the_setting_off_asks_for_the_default_share(self):
+        self.settings = RenderSettings(update_delay_ms=50, auto_width=False)
+        self.controller.toggle(self.window)
+        self.assertEqual(self.layout.acquired[0][3], 0.0)
+        self.assertEqual(self.layout.fitted, [(1, GroupRole.OUTLINE, 0.0)])
 
     def test_a_non_markdown_view_opens_nothing(self):
         self.window.active = self.window.add(View(2, self.window, markdown=False))

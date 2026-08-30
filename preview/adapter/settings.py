@@ -15,6 +15,7 @@ RENDER_KEYS = frozenset(
         "enable_toc",
         "toc_minimum_length",
         "toc_minimum_headings",
+        "auto_width",
     )
 )
 POLICY_KEYS = frozenset(

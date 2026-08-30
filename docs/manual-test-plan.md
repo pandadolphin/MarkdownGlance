@@ -33,7 +33,13 @@ forward-compatibility testing.
    watch it appear; click entries top, middle and bottom; toggle focus and
    close; zoom; close the outline, the source, the group and the window; open
    outlines for two files at once and switch between them.
-10. Install beside MarkdownLivePreview. Check directory, module, command,
+10. Widths: with `auto_width` on, open a table of contents and an outline over
+   documents with short headings and with one very long heading — no entry may
+   wrap, and neither group may be wider than it was with the setting off. Drag
+   the divider and confirm nothing moves it back until the group is closed and
+   reopened; then zoom, resize the window and type a longer heading and confirm
+   the group follows. Switch `auto_width` off and confirm both widen back.
+11. Install beside MarkdownLivePreview. Check directory, module, command,
    settings and resource isolation; document the expected shortcut collision.
 
 ## Automated prerequisites

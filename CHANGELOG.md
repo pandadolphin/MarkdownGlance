@@ -13,7 +13,20 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   being asked for; set it to `true` for the old behaviour, where a document
   past `toc_minimum_length` and `toc_minimum_headings` gets one.
 
+- **`auto_width`, defaulting to `true`.** The table of contents and the outline
+  are given the width their longest heading needs instead of a fixed share of
+  the window, so the rest goes to the content. It is a ceiling, not a target:
+  neither group is ever wider than it used to be. Dragging the divider yourself
+  turns it off for that group, and setting `auto_width` to `false` restores the
+  fixed share everywhere. See
+  [ADR 0011](docs/adr/0011-panel-width-fits-its-content.md).
+
 ### Changed
+
+- The table of contents and the outline no longer carry the preview's page
+  margins. They are lists in a narrow group, so they get 0.8rem of padding
+  rather than the document's 1.5rem, and the table of contents loses the margin
+  above its card.
 
 - Closing the table of contents now keeps it closed for that preview. It used
   to reappear within a second, because every render reopens one for a document

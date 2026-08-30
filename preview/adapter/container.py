@@ -204,6 +204,8 @@ class Container:
             self.policy_revision += 1
         if self.usecases is not None:
             self.usecases.settings_changed(render_required, policy_changed)
+        if self.outline is not None and render_required:
+            self.outline.settings_changed()
 
     def record_stage(self, stage: str) -> None:
         self.recent_stages.append(stage)

@@ -12,6 +12,13 @@ The selected backend is a read-only scratch `View` containing one block
 ownership is fingerprinted; restoration occurs only for an empty, unchanged,
 plugin-created group after its last holder closes.
 
+The table of contents and the outline are sized to their content rather than to
+a fixed share of the window. `renderer/measure.py` estimates the pixels the
+longest entry needs from per-character advances, and `LayoutOwner.acquire` and
+`LayoutOwner.fit` turn that into the boundary between the group and the one it
+was split from — never wider than the role's share, never past the point where
+the fingerprint says the user has moved the divider by hand.
+
 A second, independent surface is the source outline: `renderer/outline.py`
 scans raw Markdown for ATX and setext headings by line, and
 `application/outline.py` owns one outline per source buffer, keyed on

@@ -25,6 +25,12 @@
     "toc_minimum_length": 1200,
     "toc_minimum_headings": 3,
 
+    // The table of contents and the outline take only the width their longest
+    // heading needs, rather than a fixed share of the window, so that the rest
+    // goes to the content. Dragging the divider yourself turns it off for that
+    // group. Set to false to give them the fixed share always.
+    "auto_width": true,
+
     // Diagnostics still redact document text and Mermaid URLs when enabled.
     "debug_logging": false
 }

@@ -112,5 +112,6 @@ def parse_settings(
             True,
             report,
         ),
+        auto_width=_boolean(values, "auto_width", defaults.auto_width, report),
         debug_logging=_boolean(values, "debug_logging", defaults.debug_logging, report),
     )

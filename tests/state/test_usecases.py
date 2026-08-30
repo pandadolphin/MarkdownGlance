@@ -3,7 +3,7 @@ import os.path
 import unittest
 from unittest import mock
 
-from MarkdownGlance.preview.application.ports import SurfaceHandle
+from MarkdownGlance.preview.application.ports import GroupRole, SurfaceHandle
 from MarkdownGlance.preview.application.session_manager import SessionManager
 from MarkdownGlance.preview.application.usecases import UseCases
 from MarkdownGlance.preview.domain.contracts import (
@@ -13,6 +13,7 @@ from MarkdownGlance.preview.domain.contracts import (
     RenderSettings,
     ThemeSnapshot,
 )
+from MarkdownGlance.preview.renderer.measure import toc_width_px
 
 # Paths that are absolute on every host, so the suite runs from any of them.
 BASE = os.path.realpath(os.path.abspath(os.sep + "mdglance"))
@@ -199,10 +200,16 @@ class Backend:
 
 class Layout:
     def __init__(self):
+        self.acquired = []
+        self.fitted = []
         self.releases = []
 
-    def acquire(self, window, anchor, role, session_id):
+    def acquire(self, window, anchor, role, session_id, width_px=0.0):
+        self.acquired.append((anchor, role, session_id, width_px))
         return anchor + 1
+
+    def fit(self, window, group, role, width_px):
+        self.fitted.append((group, role, width_px))
 
     def is_owned(self, window, group):
         return True
@@ -444,6 +451,38 @@ class TocLifecycleTest(Fixture):
         self.settings = RenderSettings()
         session = self.open()
         self.assertIsNone(session.toc_surface)
+
+    def test_the_group_is_asked_for_the_width_the_entries_need(self):
+        session = self.open()
+        toc = [item for item in self.layout.acquired if item[1] == GroupRole.TOC]
+        self.assertEqual(len(toc), 1)
+        self.assertAlmostEqual(
+            toc[0][3], toc_width_px(session.last_document.headings, 16)
+        )
+        self.assertGreater(toc[0][3], 0.0)
+
+    def test_every_repaint_re_fits_the_group(self):
+        session = self.open()
+        group = self.backend.group_of(session.toc_surface)
+        self.assertEqual(
+            self.layout.fitted,
+            [(group, GroupRole.TOC, toc_width_px(session.last_document.headings, 16))],
+        )
+
+        session.zoom = 2.0
+        self.usecases.represent(session)
+
+        self.assertEqual(
+            self.layout.fitted[-1],
+            (group, GroupRole.TOC, toc_width_px(session.last_document.headings, 32)),
+        )
+
+    def test_the_setting_off_asks_for_the_default_share(self):
+        self.settings = RenderSettings(enable_toc=True, auto_width=False)
+        session = self.open()
+        self.assertIsNotNone(session.toc_surface)
+        self.assertEqual([item[3] for item in self.layout.acquired], [0.0, 0.0])
+        self.assertEqual([item[2] for item in self.layout.fitted], [0.0])
 
     def test_turning_the_setting_back_on_outlives_a_close(self):
         # The setting is the stronger switch, so it clears the session's own

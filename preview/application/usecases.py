@@ -10,7 +10,8 @@ from ..domain.contracts import (
 )
 from ..domain.paths import HOST
 from ..renderer.errors import error_card
-from ..renderer.stylesheet import represent
+from ..renderer.measure import toc_width_px
+from ..renderer.stylesheet import represent, root_font_px
 from ..renderer.toc import build_toc, toc_required
 from .ports import GroupRole
 from .session import CloseCause, PreviewSession, SessionState
@@ -180,7 +181,7 @@ class UseCases:
 
         if session.toc_surface is not None:
             toc_group = self.layout_owner.acquire(
-                window, anchor, GroupRole.TOC, session.id
+                window, anchor, GroupRole.TOC, session.id, self._toc_width(session)
             )
             if self.layout_owner.is_owned(window, toc_group):
                 session.layout_groups.add(toc_group)
@@ -204,7 +205,11 @@ class UseCases:
         if preview_group is None:
             return
         toc_group = self.layout_owner.acquire(
-            window, preview_group, GroupRole.TOC, session.id
+            window,
+            preview_group,
+            GroupRole.TOC,
+            session.id,
+            self._toc_width(session),
         )
         if self.layout_owner.is_owned(window, toc_group):
             session.layout_groups.add(toc_group)
@@ -216,6 +221,29 @@ class UseCases:
         self.manager.bind_surfaces(session)
         self.backend.reveal(session.toc_surface)
         self.backend.focus(session.preview_surface)
+
+    def _toc_width(self, session: PreviewSession) -> float:
+        """Pixels the table of contents wants, or 0.0 for the default share."""
+        if not session.settings.auto_width or session.last_document is None:
+            return 0.0
+        return toc_width_px(session.last_document.headings, root_font_px(session.zoom))
+
+    def _fit_toc(self, session: PreviewSession) -> None:
+        """Give the table of contents' group the width its entries need.
+
+        This runs on every repaint rather than at creation alone, so editing a
+        heading, zooming and resizing the window all keep the group in step.
+        `LayoutOwner.fit` decides whether the move is allowed: a group the user
+        has resized by hand stays where they put it.
+        """
+        window = self.manager.window_for_id(session.window_id)
+        if window is None or session.toc_surface is None:
+            return
+        group = self.backend.group_of(session.toc_surface)
+        if group is not None:
+            self.layout_owner.fit(
+                window, group, GroupRole.TOC, self._toc_width(session)
+            )
 
     def present(self, session: PreviewSession, document: PreviewDocument) -> None:
         if session.preview_surface is None or not self.backend.is_alive(
@@ -264,9 +292,10 @@ class UseCases:
         )
         self.backend.update(
             session.toc_surface,
-            represent(html, session.theme, session.zoom, self.base_css),
+            represent(html, session.theme, session.zoom, self.base_css, panel=True),
         )
         self.backend.reveal(session.toc_surface)
+        self._fit_toc(session)
 
     def present_error(
         self, session: PreviewSession, stage: DiagnosticStage, message: str

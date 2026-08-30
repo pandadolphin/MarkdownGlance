@@ -24,6 +24,10 @@ them and moves the caret in the file instead.
 - **One outline per file**, in a group acquired beside everything already in
   the row, so it never lands as a tab in the preview's group. It is revealed
   when its source is activated, renamed with it, and closed with it.
+- **The group is as wide as the longest entry needs**, never wider than the
+  0.3 share it used to take, and re-fitted as the file is edited, zoomed or the
+  window resized. Drag the divider and it stays where you put it;
+  `"auto_width": false` gives it the fixed share instead.
 
 ## Where it lives
 
@@ -34,6 +38,7 @@ them and moves the caret in the file instead.
 | Reading text and caret, revealing a line | `preview/adapter/source_access.py` |
 | Command, key context, event routing | `preview/adapter/{commands,events}.py` |
 | A group that is never shared | `LayoutOwner.acquire_beside` |
+| Width from the longest entry | `preview/renderer/measure.py`, `LayoutOwner.fit` |
 | Styling | `resources/preview.css`, `.source-outline*` |
 | Tests | `tests/unit/test_outline.py`, `tests/state/test_outline.py` |
 
@@ -44,4 +49,5 @@ mistaken for headings.
 
 [ADR 0010](../../adr/0010-source-outline-and-ctrl-shift-b.md) records why the
 outline is a separate surface rather than a mode of the preview's TOC, and what
-`Ctrl+Shift+B` costs.
+`Ctrl+Shift+B` costs. [ADR 0011](../../adr/0011-panel-width-fits-its-content.md)
+records how its width is measured.

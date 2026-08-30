@@ -123,6 +123,12 @@ true` and it appears once `toc_minimum_length` and `toc_minimum_headings` are
 both met. Closing its tab hides it for that preview alone, until the preview is
 closed and reopened.
 
+Both take a group of their own, and both are only as wide as their longest
+heading needs — measured from the text, capped at the share they used to take,
+and re-fitted as you edit, zoom or resize. Drag the divider and the group stays
+where you put it. `"auto_width": false` gives them the fixed share instead. See
+[ADR 0011](docs/adr/0011-panel-width-fits-its-content.md).
+
 ## Settings
 
 Run **MarkdownGlance: Open Settings** to see every setting with its default and

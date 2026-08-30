@@ -13,8 +13,9 @@ from typing import Callable, Dict, List, Optional, Set, Tuple
 
 from ..domain.contracts import SourceHeading, ThemeSnapshot
 from ..domain.ids import new_action_token, new_session_id
+from ..renderer.measure import outline_width_px
 from ..renderer.outline import active_ordinal, build_outline, scan_outline
-from ..renderer.stylesheet import represent
+from ..renderer.stylesheet import represent, root_font_px
 from .ports import GroupRole, SurfaceHandle
 
 
@@ -114,8 +115,15 @@ class OutlineController:
     def _open(self, window, source) -> None:
         source_group, _ = window.get_view_index(source)
         session_id = new_session_id()
+        # Scanned before the split, so the group is the right width the moment
+        # it appears rather than snapping narrower on the first repaint.
+        headings = scan_outline(self.read_source(source))
         group = self.layout_owner.acquire_beside(
-            window, source_group, GroupRole.OUTLINE, session_id
+            window,
+            source_group,
+            GroupRole.OUTLINE,
+            session_id,
+            self._width(headings, 1.0),
         )
         surface = self.backend.create(
             window, group, "Outline: {}".format(self._source_name(source)), session_id
@@ -190,6 +198,11 @@ class OutlineController:
             if session.surface.id not in live:
                 self._forget(session)
                 self._release(session, window)
+
+    def settings_changed(self) -> None:
+        """Repaint every outline, which is also what re-fits its group."""
+        for session in list(self._by_source.values()):
+            self._present(session, self._source_view(session))
 
     # -- content ---------------------------------------------------------
 
@@ -288,6 +301,30 @@ class OutlineController:
             None,
         )
 
+    def _width(self, headings: Tuple[SourceHeading, ...], zoom: float) -> float:
+        """Pixels the outline wants, or 0.0 for the role's default share."""
+        if not self.settings_provider().auto_width:
+            return 0.0
+        return outline_width_px(headings, root_font_px(zoom))
+
+    def _fit(self, session: OutlineSession) -> None:
+        """Give the outline's group the width its entries need.
+
+        `LayoutOwner.fit` decides whether the move is allowed, so a divider the
+        user has dragged is never moved back.
+        """
+        window = self.window_for_id(session.window_id)
+        if window is None:
+            return
+        group = self.backend.group_of(session.surface)
+        if group is not None:
+            self.layout_owner.fit(
+                window,
+                group,
+                GroupRole.OUTLINE,
+                self._width(session.headings, session.zoom),
+            )
+
     def _present(self, session: OutlineSession, source) -> None:
         if not self.backend.is_alive(session.surface):
             return
@@ -296,5 +333,7 @@ class OutlineController:
             self.theme_provider(source) if source is not None else ThemeSnapshot()
         )
         self.backend.update(
-            session.surface, represent(html, theme, session.zoom, self.base_css)
+            session.surface,
+            represent(html, theme, session.zoom, self.base_css, panel=True),
         )
+        self._fit(session)

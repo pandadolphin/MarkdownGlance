@@ -53,6 +53,7 @@ class RenderSettings:
     enable_toc: bool = False
     toc_minimum_length: int = 1200
     toc_minimum_headings: int = 3
+    auto_width: bool = True
     debug_logging: bool = False
 
 

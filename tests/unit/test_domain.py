@@ -42,6 +42,13 @@ class DomainTest(unittest.TestCase):
         self.assertFalse(parse_settings({"enable_toc": "on"}, warnings.append).enable_toc)
         self.assertEqual(len(warnings), 1)
 
+    def test_auto_width_is_on_and_switched_off_by_a_boolean(self):
+        self.assertTrue(RenderSettings().auto_width)
+        self.assertFalse(parse_settings({"auto_width": False}).auto_width)
+        warnings = []
+        self.assertTrue(parse_settings({"auto_width": 0.5}, warnings.append).auto_width)
+        self.assertEqual(len(warnings), 1)
+
     def test_settings_are_frozen(self):
         with self.assertRaises(Exception):
             RenderSettings().update_delay_ms = 1
