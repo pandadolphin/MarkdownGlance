@@ -11,7 +11,12 @@ forward-compatibility testing.
 2. Edit, save, Save As, rename and delete on disk. Confirm the latest edit wins,
    the title/base path update, and the source is never closed or recreated.
 3. Check default light, default dark and one third-party scheme; change scheme
-   while open. Exercise keyboard and mouse zoom, then reset.
+   while open. With MarkdownEditing installed, set a Markdown-only scheme with
+   `markdownediting: select color scheme` that contrasts with the global
+   `ui: select color scheme` -- preview, TOC and outline must all follow the
+   Markdown-only one, including the strip of view below the content, and must
+   move when either scheme is changed under an open preview. Exercise keyboard
+   and mouse zoom, then reset.
 4. Check short, Unicode, malformed/raw HTML and 100 KiB documents. For TOC,
    test below-threshold, nested and duplicate headings and top/middle/bottom
    navigation.

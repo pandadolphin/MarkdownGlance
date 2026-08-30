@@ -1,6 +1,7 @@
 import base64
 import json
 from string import hexdigits
+from typing import Tuple
 
 from ..domain.contracts import ThemeSnapshot
 
@@ -23,15 +24,23 @@ def background_hex(theme: ThemeSnapshot) -> str:
     return DARK_FALLBACK if theme.is_dark else LIGHT_FALLBACK
 
 
+def diagram_appearance(theme: ThemeSnapshot) -> Tuple[str, str]:
+    """The part of a theme that reaches the image: same pair, same diagram.
+
+    The server bakes the image, so unlike the preview's own HTML it cannot be
+    re-coloured by a repaint. Two themes that agree here share a URL, and a
+    cached diagram; two that do not need a new one fetched.
+    """
+    return ("dark" if theme.is_dark else "default", background_hex(theme))
+
+
 def mermaid_image_url(diagram: str, server: str, theme: ThemeSnapshot) -> str:
+    name, background = diagram_appearance(theme)
     payload = json.dumps(
-        {
-            "code": diagram,
-            "mermaid": {"theme": "dark" if theme.is_dark else "default"},
-        },
+        {"code": diagram, "mermaid": {"theme": name}},
         separators=(",", ":"),
     ).encode("utf-8")
     encoded = base64.urlsafe_b64encode(payload).decode("ascii").rstrip("=")
     return "{}/img/{}?type=png&bgColor={}".format(
-        server.rstrip("/"), encoded, background_hex(theme)
+        server.rstrip("/"), encoded, background
     )

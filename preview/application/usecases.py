@@ -1,7 +1,9 @@
 import os.path
 from typing import Callable, Optional
 
+from ..assets.mermaid import diagram_appearance
 from ..domain.contracts import (
+    AssetKind,
     DiagnosticStage,
     PreviewDocument,
     PreviewMode,
@@ -15,6 +17,12 @@ from ..renderer.stylesheet import represent, root_font_px
 from ..renderer.toc import build_toc, toc_required
 from .ports import GroupRole
 from .session import CloseCause, PreviewSession, SessionState
+
+
+def _has_diagram(document: Optional[PreviewDocument]) -> bool:
+    return document is not None and any(
+        key.kind == AssetKind.MERMAID for key in document.asset_dependencies
+    )
 
 
 class UseCases:
@@ -105,6 +113,9 @@ class UseCases:
         session.preview_surface = self.backend.create(
             window, group, "Preview: {}".format(session.source_name), session.id
         )
+        # Before anything is painted, so the empty surface never shows in the
+        # global scheme while the first render is still on the pool.
+        self.backend.apply_theme(session.preview_surface, session.theme)
         self.backend.set_role(session.preview_surface, "preview")
         self.manager.bind_surfaces(session)
         session.state = SessionState.RENDERING
@@ -217,6 +228,7 @@ class UseCases:
         session.toc_surface = self.backend.create(
             window, toc_group, "TOC: {}".format(session.source_name), session.id
         )
+        self.backend.apply_theme(session.toc_surface, session.theme)
         self.backend.set_role(session.toc_surface, "toc")
         self.manager.bind_surfaces(session)
         self.backend.reveal(session.toc_surface)
@@ -245,6 +257,16 @@ class UseCases:
                 window, group, GroupRole.TOC, self._toc_width(session)
             )
 
+    def _paint(self, session: PreviewSession, surface, html: str) -> None:
+        """Repaint a surface, reasserting the source's colour scheme first.
+
+        The scheme has to travel with every paint rather than being set once at
+        creation: `markdownediting: select color scheme` moves it under a
+        preview that is already open.
+        """
+        self.backend.apply_theme(surface, session.theme)
+        self.backend.update(surface, html)
+
     def present(self, session: PreviewSession, document: PreviewDocument) -> None:
         if session.preview_surface is None or not self.backend.is_alive(
             session.preview_surface
@@ -252,7 +274,8 @@ class UseCases:
             return
         ratios = {heading.slug: heading.position_ratio for heading in document.headings}
         self.backend.set_heading_ratios(session.preview_surface, ratios)
-        self.backend.update(
+        self._paint(
+            session,
             session.preview_surface,
             represent(document.body_html, session.theme, session.zoom, self.base_css),
         )
@@ -299,7 +322,8 @@ class UseCases:
         html = build_toc(
             session.last_document.headings, session.action_token, active_slug
         )
-        self.backend.update(
+        self._paint(
+            session,
             session.toc_surface,
             represent(html, session.theme, session.zoom, self.base_css, panel=True),
         )
@@ -312,14 +336,16 @@ class UseCases:
             return
         previous = session.last_document.body_html if session.last_document else ""
         body = "{}{}".format(error_card(stage, message), previous)
-        self.backend.update(
+        self._paint(
+            session,
             session.preview_surface,
             represent(body, session.theme, session.zoom, self.base_css),
         )
 
     def represent(self, session: PreviewSession) -> None:
         if session.last_document is not None:
-            self.backend.update(
+            self._paint(
+                session,
                 session.preview_surface,
                 represent(
                     session.last_document.body_html,
@@ -448,5 +474,15 @@ class UseCases:
                 # almost always the same one. Repainting anyway costs a full
                 # minihtml layout of the whole document.
                 return
+            stale_diagrams = diagram_appearance(theme) != diagram_appearance(
+                session.theme
+            ) and _has_diagram(session.last_document)
             session.theme = theme
             self.represent(session)
+            if stale_diagrams:
+                # A repaint recolours the document, but not a Mermaid diagram:
+                # that is an image the server baked for one background, and its
+                # URL is fixed when the Markdown is parsed. Without a render the
+                # document would come back in the new palette carrying diagrams
+                # in the old one.
+                self.scheduler.request_render(session.id, "theme")

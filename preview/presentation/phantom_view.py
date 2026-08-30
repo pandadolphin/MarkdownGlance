@@ -4,6 +4,7 @@ from typing import Callable, Dict, Optional
 import sublime
 
 from ..application.ports import NavigationCapability, SurfaceHandle
+from ..domain.contracts import ThemeSnapshot
 
 OWNER_KEY = "mdglance.session"
 ROLE_KEY = "mdglance.role"
@@ -71,6 +72,25 @@ class PhantomViewBackend:
     def viewport_width(self, handle: SurfaceHandle) -> float:
         view = self._view(handle)
         return float(view.viewport_extent()[0]) if view is not None else 0.0
+
+    def apply_theme(self, handle: SurfaceHandle, theme: ThemeSnapshot) -> None:
+        """Put the source's colour scheme on the surface.
+
+        A phantom resolves `var(--background)`, `var(--bluish)` and the rest
+        against the colour scheme of the view it sits in, and so does the strip
+        of view around it. A surface is a plain scratch file, so it inherits
+        the global scheme -- which is the wrong one for a Markdown source that
+        MarkdownEditing has given a scheme of its own.
+        """
+        view = self._view(handle)
+        if view is None:
+            return
+        settings = view.settings()
+        for key, value in theme.scheme:
+            # Setting a value Sublime already holds still costs a re-resolve of
+            # the scheme, and this runs on every repaint.
+            if settings.get(key) != value:
+                settings.set(key, value)
 
     def set_role(self, handle: SurfaceHandle, role: str) -> None:
         view = self._view(handle)

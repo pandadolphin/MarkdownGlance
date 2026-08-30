@@ -128,6 +128,9 @@ class OutlineController:
         surface = self.backend.create(
             window, group, "Outline: {}".format(self._source_name(source)), session_id
         )
+        # Before the first paint, so the empty surface never shows in a scheme
+        # the source does not use.
+        self.backend.apply_theme(surface, self.theme_provider(source))
         self.backend.set_role(surface, "outline")
         session = OutlineSession(
             session_id,
@@ -332,6 +335,9 @@ class OutlineController:
         theme = (
             self.theme_provider(source) if source is not None else ThemeSnapshot()
         )
+        # The scheme goes on before the paint: minihtml resolves the phantom's
+        # colour variables against the surface's own scheme, not the source's.
+        self.backend.apply_theme(session.surface, theme)
         self.backend.update(
             session.surface,
             represent(html, theme, session.zoom, self.base_css, panel=True),

@@ -70,6 +70,7 @@ def _install_sublime_stub():
 SUBLIME = _install_sublime_stub()
 
 from MarkdownGlance.preview.application.ports import SurfaceHandle  # noqa: E402
+from MarkdownGlance.preview.domain.contracts import ThemeSnapshot  # noqa: E402
 from MarkdownGlance.preview.presentation.phantom_view import (  # noqa: E402
     PhantomViewBackend,
 )
@@ -78,8 +79,10 @@ from MarkdownGlance.preview.presentation.phantom_view import (  # noqa: E402
 class Settings:
     def __init__(self):
         self.values = {}
+        self.writes = []
 
     def set(self, key, value):
+        self.writes.append((key, value))
         self.values[key] = value
 
     def get(self, key, default=None):
@@ -178,6 +181,52 @@ class PhantomViewBackendTest(unittest.TestCase):
         self.backend.close(self.handle)
         self.assertNotIn(self.handle.id, self.backend._navigators)
         self.assertNotIn(self.handle.id, self.backend._html)
+
+
+class ColourSchemeTest(unittest.TestCase):
+    """The phantom reads `var(--background)` and the rest from the colour
+    scheme of the view it sits in, so the source's scheme has to be put on the
+    surface for a Markdown file that MarkdownEditing has given one of its own.
+    """
+
+    SCHEME = (
+        ("color_scheme", "MarkdownEditor.sublime-color-scheme"),
+        ("dark_color_scheme", "MarkdownEditor-Dark.sublime-color-scheme"),
+    )
+
+    def setUp(self):
+        self.backend = PhantomViewBackend()
+        self.view = View(7)
+        self.handle = SurfaceHandle("phantom_view", 7, 1)
+        self.backend._view = lambda handle: self.view
+
+    def test_every_named_scheme_setting_lands_on_the_surface(self):
+        self.backend.apply_theme(self.handle, ThemeSnapshot(scheme=self.SCHEME))
+
+        self.assertEqual(self.view.settings().writes, list(self.SCHEME))
+
+    def test_a_scheme_already_in_place_is_not_written_again(self):
+        # Sublime re-resolves the scheme on every write, and this runs on
+        # every repaint -- including the ones the viewport poll asks for.
+        self.backend.apply_theme(self.handle, ThemeSnapshot(scheme=self.SCHEME))
+        self.backend.apply_theme(self.handle, ThemeSnapshot(scheme=self.SCHEME))
+
+        self.assertEqual(self.view.settings().writes, list(self.SCHEME))
+
+    def test_a_moved_scheme_is_written(self):
+        self.backend.apply_theme(self.handle, ThemeSnapshot(scheme=self.SCHEME))
+        moved = (("color_scheme", "MarkdownEditor-Yellow.sublime-color-scheme"),)
+
+        self.backend.apply_theme(self.handle, ThemeSnapshot(scheme=moved))
+
+        self.assertEqual(self.view.settings().writes[-1:], list(moved))
+
+    def test_a_dead_surface_is_left_alone(self):
+        self.backend._view = lambda handle: None
+
+        self.backend.apply_theme(self.handle, ThemeSnapshot(scheme=self.SCHEME))
+
+        self.assertEqual(self.view.settings().writes, [])
 
 
 if __name__ == "__main__":

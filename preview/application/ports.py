@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Protocol, Sequence, Set
 
-from ..domain.contracts import AssetKey, AssetResult
+from ..domain.contracts import AssetKey, AssetResult, ThemeSnapshot
 
 
 class NavigationCapability(Enum):
@@ -32,6 +32,8 @@ class PresentationBackend(Protocol):
     ) -> SurfaceHandle: ...
 
     def update(self, handle: SurfaceHandle, html: str) -> None: ...
+
+    def apply_theme(self, handle: SurfaceHandle, theme: ThemeSnapshot) -> None: ...
 
     def viewport_width(self, handle: SurfaceHandle) -> float: ...
 

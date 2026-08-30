@@ -221,6 +221,7 @@ class ThemeSnapshot:
     foreground: str
     is_dark: bool
     accent: str             # scheme "accent" if present, else derived
+    scheme: Tuple[Tuple[str, str], ...]   # colour-scheme settings to mirror
 
 
 @dataclass(frozen=True)
@@ -1245,6 +1246,16 @@ Change classification: `{update_delay_ms, debug_logging}` → no rerender;
 `foreground`, `accent` if present) and `is_dark` from background luminance.
 Colour scheme changes are observed by `view.settings().add_on_change` on the
 `color_scheme` key of each owned source view (removed on close).
+
+It also carries `scheme`: the `color_scheme`, `dark_color_scheme` and
+`light_color_scheme` settings the source resolved. `backend.apply_theme` puts
+them on the surface before every paint. minihtml resolves a phantom's
+`var(--background)`, `var(--foreground)` and `var(--bluish)` against the colour
+scheme of the view the phantom sits in, and `preview.css` is written in terms
+of those three, so a surface left on the global scheme would paint the document
+in a palette the source never used. A Markdown buffer routinely has a scheme of
+its own -- MarkdownEditing writes one into `Markdown.sublime-settings`, and a
+syntax-specific setting beats the global `Preferences` one.
 
 ### 11.3 Events
 

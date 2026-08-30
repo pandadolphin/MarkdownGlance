@@ -7,6 +7,8 @@ from MarkdownGlance.preview.application.ports import GroupRole, SurfaceHandle
 from MarkdownGlance.preview.application.session_manager import SessionManager
 from MarkdownGlance.preview.application.usecases import UseCases
 from MarkdownGlance.preview.domain.contracts import (
+    AssetKey,
+    AssetKind,
     Heading,
     PreviewDocument,
     PreviewMode,
@@ -129,6 +131,7 @@ class Backend:
         self.navigations = []
         self.updates = []
         self.revealed = []
+        self.themes = {}
 
     def create(self, window, group, title, session_id):
         self.next_id += 1
@@ -170,6 +173,9 @@ class Backend:
 
     def update(self, handle, html):
         self.updates.append((handle.id, html))
+
+    def apply_theme(self, handle, theme):
+        self.themes[handle.id] = theme
 
     def set_heading_ratios(self, handle, ratios):
         pass
@@ -532,6 +538,101 @@ class RepaintCostTest(TocLifecycleTest):
 
         self.assertGreater(len(self.backend.updates), before)
         self.assertEqual(session.theme.background, "#101010")
+
+
+class DiagramThemeTest(TocLifecycleTest):
+    """A Mermaid diagram is an image the server baked for one background, so a
+    change of colour scheme has to fetch it again. Everything else in the
+    document is recoloured by a repaint alone.
+    """
+
+    DIAGRAM = AssetKey(AssetKind.MERMAID, "https://mermaid.test/img/abc?bgColor=ffffff")
+
+    def with_diagram(self):
+        session = self.open()
+        document = session.last_document
+        session.last_document = PreviewDocument(
+            document.generation,
+            document.body_html,
+            document.headings,
+            (self.DIAGRAM,),
+            (),
+            (),
+        )
+        return session
+
+    def renders(self, session):
+        return [reason for sid, reason in self.scheduler.requests if sid == session.id]
+
+    def test_a_new_background_fetches_the_diagram_again(self):
+        session = self.with_diagram()
+        before = self.renders(session)
+        self.usecases.theme_provider = lambda view: ThemeSnapshot(
+            background="#101010", is_dark=True
+        )
+
+        self.usecases.theme_changed(self.source)
+
+        self.assertEqual(self.renders(session), before + ["theme"])
+
+    def test_a_theme_the_diagram_cannot_see_only_repaints(self):
+        session = self.with_diagram()
+        before = self.renders(session)
+        updates = len(self.backend.updates)
+        # Same background and same is_dark: the diagram URL is unchanged, and
+        # only the document's own palette has moved.
+        self.usecases.theme_provider = lambda view: ThemeSnapshot(accent="#ff0000")
+
+        self.usecases.theme_changed(self.source)
+
+        self.assertEqual(self.renders(session), before)
+        self.assertGreater(len(self.backend.updates), updates)
+
+    def test_a_document_without_a_diagram_only_repaints(self):
+        session = self.open()
+        before = self.renders(session)
+        self.usecases.theme_provider = lambda view: ThemeSnapshot(
+            background="#101010", is_dark=True
+        )
+
+        self.usecases.theme_changed(self.source)
+
+        self.assertEqual(self.renders(session), before)
+
+
+class SurfaceColourSchemeTest(TocLifecycleTest):
+    """A Markdown file can carry a colour scheme of its own -- MarkdownEditing
+    writes one into `Markdown.sublime-settings`, and it beats the global one.
+    Every surface has to be put on that scheme: minihtml resolves a phantom's
+    colour variables against the view the phantom sits in, so a surface left on
+    the defaults renders the document in the wrong palette.
+    """
+
+    SCHEME = (("color_scheme", "MarkdownEditor.sublime-color-scheme"),)
+
+    def setUp(self):
+        super().setUp()
+        self.usecases.theme_provider = lambda view: ThemeSnapshot(scheme=self.SCHEME)
+
+    def test_the_source_scheme_reaches_the_preview_and_the_contents(self):
+        session = self.open()
+
+        self.assertEqual(
+            self.backend.themes[session.preview_surface.id].scheme, self.SCHEME
+        )
+        self.assertEqual(
+            self.backend.themes[session.toc_surface.id].scheme, self.SCHEME
+        )
+
+    def test_a_scheme_chosen_while_the_preview_is_open_still_reaches_it(self):
+        session = self.open()
+        moved = (("color_scheme", "MarkdownEditor-Yellow.sublime-color-scheme"),)
+        self.usecases.theme_provider = lambda view: ThemeSnapshot(scheme=moved)
+
+        self.usecases.theme_changed(self.source)
+
+        self.assertEqual(self.backend.themes[session.preview_surface.id].scheme, moved)
+        self.assertEqual(self.backend.themes[session.toc_surface.id].scheme, moved)
 
 
 if __name__ == "__main__":

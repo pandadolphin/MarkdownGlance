@@ -34,10 +34,21 @@ class AssetKey:
 
 @dataclass(frozen=True)
 class ThemeSnapshot:
+    """The source view's palette, and the colour scheme it came from.
+
+    `scheme` is the `(key, value)` pairs a surface has to mirror to resolve the
+    same palette itself: minihtml reads `var(--background)` and the rest from
+    the colour scheme of the view a phantom sits in, not from the source. A
+    Markdown file often carries its own scheme -- MarkdownEditing writes one
+    into `Markdown.sublime-settings`, and it wins over the global one -- so a
+    surface left on the defaults would follow a different scheme entirely.
+    """
+
     background: str = "#ffffff"
     foreground: str = "#222222"
     is_dark: bool = False
     accent: str = "#4f8cc9"
+    scheme: Tuple[Tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)

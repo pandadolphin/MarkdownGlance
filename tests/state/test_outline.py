@@ -88,6 +88,7 @@ class Backend:
         self.focused = []
         self.revealed = []
         self.closed = []
+        self.themes = {}
 
     def create(self, window, group, title, session_id):
         self.next_id += 1
@@ -107,6 +108,9 @@ class Backend:
 
     def update(self, handle, html):
         self.html[handle.id] = html
+
+    def apply_theme(self, handle, theme):
+        self.themes[handle.id] = theme
 
     def is_alive(self, handle):
         return handle.id in self.alive
@@ -366,3 +370,14 @@ class OutlineControllerTest(unittest.TestCase):
         self.assertEqual(self.controller.sessions_in(1), [])
         self.controller.close_all()
         self.assertEqual(self.backend.closed, [handle.id])
+
+    def test_the_outline_is_put_on_the_source_colour_scheme(self):
+        # minihtml resolves the phantom's colour variables against the surface,
+        # so an outline left on the global scheme would ignore the one
+        # MarkdownEditing gave the source.
+        scheme = (("color_scheme", "MarkdownEditor.sublime-color-scheme"),)
+        self.controller.theme_provider = lambda view: ThemeSnapshot(scheme=scheme)
+
+        self.controller.toggle(self.window)
+
+        self.assertEqual(self.backend.themes[self.surface().id].scheme, scheme)

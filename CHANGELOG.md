@@ -36,9 +36,13 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   dark scheme every label drawn straight onto that background — sequence
   messages, loop and note text — was near-black on near-black while the filled
   actor boxes stayed readable. The request now carries the Mermaid `dark` theme
-  and the preview's own background colour when the scheme is dark. The colour
-  is part of the diagram URL, so switching scheme fetches a new image rather
-  than reusing the cached one.
+  and the preview's own background colour when the scheme is dark. The scheme
+  is read from the Markdown view, so one chosen with `MarkdownEditing: Select
+  Color Scheme` wins over the global `UI: Select Color Scheme`, exactly as it
+  does in the editor. A diagram is baked by the server and cannot be recoloured
+  by a repaint, so changing scheme under an open preview now renders the
+  document again for the new diagram URLs instead of leaving the old images in
+  place.
 
 - The table of contents and the outline no longer carry the preview's page
   margins. They are lists in a narrow group, so they get 0.8rem of padding
@@ -89,6 +93,18 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   on the launch. Three random bytes keep the intent.
 
 ### Fixed
+
+- **The preview, the table of contents and the outline now follow the colour
+  scheme the Markdown file itself resolved.** A Markdown buffer usually has one
+  of its own -- `markdownediting: select color scheme` writes `color_scheme`
+  into `Markdown.sublime-settings`, and a syntax-specific setting beats the
+  global `ui: select color scheme` -- but every surface is a plain scratch view,
+  so it inherited the global scheme instead. That is the scheme minihtml
+  resolves `var(--background)`, `var(--foreground)` and `var(--bluish)` against,
+  and `preview.css` is built out of those three, so the whole page was painted
+  in the wrong palette: a light MarkdownEditing scheme over a dark editor read
+  as a dark preview beside a light source. Each surface is now put on the
+  source's scheme, and re-put on it whenever the source's moves.
 
 - Closing the table of contents from its tab left its empty group behind. The
   group was released by asking the backend which group the surface was in, but
