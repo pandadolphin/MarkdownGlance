@@ -7,12 +7,19 @@
 Live Markdown preview for Sublime Text 4, rendered in an editor group of the
 same window — no browser, no WebView, no external process.
 
-![A design document previewed beside its own table of contents in Sublime Text: rendered headings, a monospace table and a Mermaid diagram on the left, a navigable TOC on the right](docs/screenshots/preview-and-toc.png)
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screenshots/preview-and-toc-light.png">
+  <img alt="A design document previewed beside its own table of contents in Sublime Text: rendered headings, a monospace table and a Mermaid diagram on the left, a navigable TOC on the right" src="docs/screenshots/preview-and-toc-dark.png">
+</picture>
 
 Above: one Sublime Text window. The preview, the Mermaid diagram and the
 aligned table are drawn by minihtml in an ordinary editor group, and the table
 of contents on the right — `"enable_toc": true` — is a second group that
-scrolls it.
+scrolls it. Nothing in the preview is styled by hand: it takes its colours from
+the active color scheme, so the same document reads as
+[dark](docs/screenshots/preview-and-toc-dark.png) or
+[light](docs/screenshots/preview-and-toc-light.png) with the editor. The shot
+above follows your own theme here, for the same reason.
 
 ## Features
 
