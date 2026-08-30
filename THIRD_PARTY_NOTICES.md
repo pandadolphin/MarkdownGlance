@@ -3,11 +3,13 @@
 ## markdown2 2.3.9
 
 Vendored from [python-markdown2](https://github.com/trentm/python-markdown2)
-with two local changes: the command-line mainline is removed — a Sublime Text
+with three local changes: the command-line mainline is removed — a Sublime Text
 package never runs it, and it pulled in `optparse`, a `Markdown.pl` comparison
-through `subprocess.Popen` and a `sys.path` insert — and two regex literals are
+through `subprocess.Popen` and a `sys.path` insert — two regex literals are
 raw strings so that recent Python versions do not warn about invalid escape
-sequences. The library API is untouched.
+sequences, and `SECRET_SALT` is three random bytes rather than
+`bytes(randint(0, 1000000))`, which is a zero-filled buffer of random *length*
+prepended to every `_hash_text` call. The library API is untouched.
 
 Copyright (c) 2012 Trent Mick.
 Copyright (c) 2007-2008 ActiveState Corp.

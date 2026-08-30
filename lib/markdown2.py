@@ -137,7 +137,13 @@ log = logging.getLogger("markdown")
 DEFAULT_TAB_WIDTH = 4
 
 
-SECRET_SALT = bytes(randint(0, 1000000))
+# Local change: upstream writes `bytes(randint(0, 1000000))`, which is not a
+# random salt but a zero-filled buffer of random *length* -- up to a megabyte,
+# re-hashed on every `_hash_text` call. Measured on a 69 KB document that cost
+# ~1.7 ms per call against ~0.7 us, and the length is drawn once per process,
+# so the same document parsed fast or slowly depending on the draw. Three
+# bytes keep the intent: a per-process salt document text cannot predict.
+SECRET_SALT = randint(0, 1000000).to_bytes(3, "big")
 # MD5 function was previously used for this; the "md5" prefix was kept for
 # backwards compatibility.
 def _hash_text(s):

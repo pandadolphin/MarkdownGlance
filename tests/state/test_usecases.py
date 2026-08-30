@@ -128,6 +128,7 @@ class Backend:
         self.focused = []
         self.navigations = []
         self.updates = []
+        self.revealed = []
 
     def create(self, window, group, title, session_id):
         self.next_id += 1
@@ -165,7 +166,7 @@ class Backend:
         self.groups[handle.id] = group
 
     def reveal(self, handle):
-        pass
+        self.revealed.append(handle.id)
 
     def update(self, handle, html):
         self.updates.append((handle.id, html))
@@ -496,6 +497,41 @@ class TocLifecycleTest(Fixture):
         self.usecases.present(session, session.last_document)
 
         self.assertIsNotNone(session.toc_surface)
+
+
+class RepaintCostTest(TocLifecycleTest):
+    """A repaint must not do work Sublime charges a full minihtml layout for."""
+
+    def test_a_repaint_does_not_reveal_the_table_of_contents_again(self):
+        session = self.open()
+        # `reveal` focuses the group, the view, then the previous group back,
+        # and each focus change makes Sublime fire `on_activated`, which reads
+        # the theme and repaints -- landing here again. Creation reveals; a
+        # repaint must not.
+        self.assertEqual(self.backend.revealed, [session.toc_surface.id])
+
+        self.usecases.present(session, session.last_document)
+        self.usecases.represent(session)
+
+        self.assertEqual(self.backend.revealed, [session.toc_surface.id])
+
+    def test_an_unchanged_theme_does_not_repaint(self):
+        session = self.open()
+        before = len(self.backend.updates)
+
+        self.usecases.theme_changed(self.source)
+
+        self.assertEqual(len(self.backend.updates), before)
+
+    def test_a_changed_theme_still_repaints(self):
+        session = self.open()
+        before = len(self.backend.updates)
+        self.usecases.theme_provider = lambda view: ThemeSnapshot(background="#101010")
+
+        self.usecases.theme_changed(self.source)
+
+        self.assertGreater(len(self.backend.updates), before)
+        self.assertEqual(session.theme.background, "#101010")
 
 
 if __name__ == "__main__":

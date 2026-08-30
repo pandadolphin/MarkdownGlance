@@ -1,3 +1,4 @@
+import time
 from typing import Callable, Dict, Optional
 
 import sublime
@@ -26,10 +27,29 @@ class PhantomViewBackend:
     name = "phantom_view"
     navigation = NavigationCapability.PROGRAMMATIC
 
-    def __init__(self, on_link: Optional[Callable[[SurfaceHandle, str], None]] = None):
+    def __init__(
+        self,
+        on_link: Optional[Callable[[SurfaceHandle, str], None]] = None,
+        on_paint: Optional[Callable[[SurfaceHandle, int, float, bool], None]] = None,
+    ):
         self._phantoms: Dict[int, object] = {}
         self._ratios: Dict[int, Dict[str, float]] = {}
+        # One navigate callback per surface, held for the life of the surface.
+        # `PhantomSet.update` keys a phantom on (region, content, layout,
+        # on_navigate), so a callback built fresh on each repaint never
+        # compares equal: the set erases the phantom and adds it back, and
+        # minihtml lays the whole document out again even when not a byte of
+        # it changed. A stable callback makes an unchanged repaint free.
+        self._navigators: Dict[int, Callable[[str], None]] = {}
+        self._html: Dict[int, str] = {}
         self._on_link_callback = on_link or (lambda handle, href: None)
+        # Told about every repaint: the surface, the size of the HTML, how long
+        # the phantom set took, and whether the paint was skipped as unchanged.
+        # This is the only place the cost of a minihtml layout is visible from
+        # Python, and it is the number to look at before optimising further.
+        self._on_paint = on_paint or (
+            lambda handle, size, elapsed_ms, skipped: None
+        )
 
     def set_link_handler(self, callback: Callable[[SurfaceHandle, str], None]) -> None:
         self._on_link_callback = callback
@@ -59,22 +79,41 @@ class PhantomViewBackend:
 
     def update(self, handle: SurfaceHandle, html: str) -> None:
         view = self._view(handle)
-        phantom_set = self._phantoms.get(handle.id)
         if view is None:
             return
+        if self._html.get(handle.id) == html:
+            # Nothing changed. Repaints arrive from the viewport poll, from a
+            # theme re-read on focus and from every table-of-contents render,
+            # and each one would otherwise cost a full minihtml layout.
+            self._on_paint(handle, len(html), 0.0, True)
+            return
+        phantom_set = self._phantoms.get(handle.id)
         if phantom_set is None:
             phantom_set = sublime.PhantomSet(view, "mdglance")
             self._phantoms[handle.id] = phantom_set
+        started = time.perf_counter()
         phantom_set.update(
             [
                 sublime.Phantom(
                     sublime.Region(0),
                     html,
                     sublime.LAYOUT_BLOCK,
-                    lambda href: self._on_link_callback(handle, href),
+                    self._navigator(handle),
                 )
             ]
         )
+        elapsed_ms = (time.perf_counter() - started) * 1000.0
+        self._html[handle.id] = html
+        self._on_paint(handle, len(html), elapsed_ms, False)
+
+    def _navigator(self, handle: SurfaceHandle) -> Callable[[str], None]:
+        callback = self._navigators.get(handle.id)
+        if callback is None:
+            def callback(href: str, handle: SurfaceHandle = handle) -> None:
+                self._on_link_callback(handle, href)
+
+            self._navigators[handle.id] = callback
+        return callback
 
     def set_heading_ratios(
         self, handle: SurfaceHandle, ratios: Dict[str, float]
@@ -116,6 +155,8 @@ class PhantomViewBackend:
         view = self._view(handle)
         self._phantoms.pop(handle.id, None)
         self._ratios.pop(handle.id, None)
+        self._navigators.pop(handle.id, None)
+        self._html.pop(handle.id, None)
         if view is not None:
             view.settings().erase(OWNER_KEY)
             view.settings().erase(ROLE_KEY)

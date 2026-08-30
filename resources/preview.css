@@ -201,10 +201,6 @@ pre code {
     padding: 0;
 }
 
-i.space {
-    color: var(--preview-surface);
-}
-
 img {
     max-width: 100%;
     height: auto;

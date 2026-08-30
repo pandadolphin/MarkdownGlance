@@ -161,3 +161,54 @@ Unicode: 中文 café 😀
     def test_malformed_markdown_does_not_raise(self):
         document = render(request("# [broken\n\n<div><b>still text"), FakeResolver())
         self.assertTrue(document.body_html)
+
+
+class PreWhitespaceTest(unittest.TestCase):
+    """Indentation in a code block survives minihtml's whitespace collapsing.
+
+    It used to be held by one `<i class="space">.</i>` element per space, which
+    cost minihtml a layout box each; a run of U+00A0 holds the same width for
+    no boxes at all. See `minihtml._pre_text`.
+    """
+
+    def body(self, markdown):
+        return render(request(markdown), FakeResolver()).body_html
+
+    def test_indentation_is_kept_as_no_break_spaces(self):
+        html = self.body("```\ndef f():\n    return 1\n```\n")
+        self.assertIn("    return 1", html)
+
+    def test_a_single_space_stays_a_breakable_space(self):
+        # minihtml collapses runs, not lone spaces, and a plain space is the
+        # only place a long code line may wrap.
+        html = self.body("```\nalpha beta gamma\n```\n")
+        self.assertIn("alpha beta gamma", html)
+
+    def test_no_element_is_emitted_per_space(self):
+        html = self.body("```\n        deep\n```\n")
+        self.assertNotIn("<i", html)
+        self.assertEqual(html.count(" "), 8)
+
+    def test_newlines_still_become_breaks(self):
+        html = self.body("```\none\ntwo\n```\n")
+        self.assertIn("one<br />two", html)
+
+    def test_markup_in_a_code_block_is_still_escaped(self):
+        html = self.body("```\n  <script>x</script>\n```\n")
+        self.assertNotIn("<script>", html)
+        self.assertIn("&lt;script&gt;", html)
+
+
+class VendoredParserTest(unittest.TestCase):
+    def test_the_hash_salt_is_small(self):
+        """Upstream markdown2 writes `bytes(randint(0, 1000000))`.
+
+        That is not a random salt but a zero-filled buffer of random *length*,
+        prepended to every `_hash_text` call -- and `_hash_text` runs hundreds
+        of times per parse. Measured on a 69 KB document, the draw decided
+        whether a parse took 123 ms or 1628 ms, once per plugin_host. Keep the
+        salt small if the parser is ever re-vendored.
+        """
+        from MarkdownGlance.lib.markdown2 import SECRET_SALT
+
+        self.assertLessEqual(len(SECRET_SALT), 32)

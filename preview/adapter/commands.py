@@ -138,6 +138,11 @@ class MdglanceCopyDiagnosticsCommand(sublime_plugin.WindowCommand):
                 "debug_logging": settings.debug_logging,
             },
             "recent_stages": list(container.recent_stages),
+            # Python render cost and Sublime paint cost for the last few
+            # repaints. A `skipped` paint is one the backend dropped because
+            # the HTML had not changed.
+            "recent_renders": list(container.recent_renders),
+            "recent_paints": list(container.recent_paints),
         }
         sublime.set_clipboard(json.dumps(payload, indent=2, sort_keys=True))
         sublime.status_message("MarkdownGlance diagnostics copied")

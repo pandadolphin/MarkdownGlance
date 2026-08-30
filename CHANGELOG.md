@@ -21,6 +21,14 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   fixed share everywhere. See
   [ADR 0011](docs/adr/0011-panel-width-fits-its-content.md).
 
+- **`mdglance_copy_diagnostics` now reports what a repaint cost.** The payload
+  carries `recent_renders` -- the Python half, with the size of the Markdown in
+  and the HTML out -- and `recent_paints`, the wall clock around
+  `PhantomSet.update` together with the size of the HTML and whether the paint
+  was skipped as unchanged. With `debug_logging` on, each paint is printed to
+  the console as it happens. The paint number is a floor: it covers the layout
+  only to the extent Sublime does that work synchronously.
+
 ### Changed
 
 - The table of contents and the outline no longer carry the preview's page
@@ -33,6 +41,43 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   that qualifies and the viewport poll renders again as soon as the preview
   grows into the group just given back. A close is remembered until the preview
   itself is closed and reopened, or until `enable_toc` is switched off and on.
+
+### Performance
+
+- **A repaint no longer costs a full minihtml layout when nothing changed.**
+  `PhantomSet.update` identifies a phantom by its region, content, layout *and*
+  its `on_navigate` callback, and the backend built that callback fresh on
+  every repaint, so the set never recognised the phantom already on screen: it
+  erased it and added it back, and Sublime laid the whole document out again.
+  One callback per surface now lives for the life of the surface, and identical
+  HTML is dropped before it reaches the phantom set at all. Repaints arrive
+  from the viewport poll, from a theme re-read on every focus change and from
+  every table-of-contents render, so most of them were doing no work worth the
+  layout.
+
+- **Indentation in a code block no longer costs an element per space.** minihtml
+  collapses a run of spaces, which the serialiser held open with one
+  background-coloured `<i class="space">.</i>` per space -- 5774 of them in this
+  repository's own 69 KB design document, more than half of every element on the
+  page. A run of two or more spaces is now a run of U+00A0, the technique
+  [ADR 0007](docs/adr/0007-table-rendering-under-minihtml.md) already measured
+  for table padding. Single spaces stay plain, so a long code line keeps its
+  wrap points. The document's HTML falls from 296 KB to 178 KB and its element
+  count from 9332 to 3558.
+
+- **Repainting the table of contents no longer spins the window's focus.** It
+  called `reveal`, which focuses the group, then the view, then the previous
+  group back; each of those makes Sublime fire `on_activated`, which re-reads
+  the theme and repaints -- landing back in the same place. Creation and a mode
+  switch still reveal the tab; a repaint does not. A theme that has not changed
+  is also no longer a reason to repaint.
+
+- **The vendored parser drew a megabyte-sized hash salt.** Upstream markdown2
+  writes `SECRET_SALT = bytes(randint(0, 1000000))`, which is not a random salt
+  but a zero-filled buffer of random *length*, re-hashed on each of the several
+  hundred `_hash_text` calls a parse makes. The draw happens once per
+  `plugin_host`, so the same document parsed in 123 ms or in 1628 ms depending
+  on the launch. Three random bytes keep the intent.
 
 ### Fixed
 

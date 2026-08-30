@@ -18,6 +18,10 @@ from ..domain.contracts import (
 from .errors import asset_placeholder
 from .model import ElementNode, Node, StructuredDoc, TextNode
 
+# minihtml collapses runs of plain whitespace; a run of U+00A0 survives.
+NBSP = "\u00a0"
+_RUN_OF_SPACES = re.compile(" {2,}")
+
 ALLOWED_TAGS = frozenset(
     (
         "p",
@@ -59,15 +63,24 @@ def _class_value(value: str) -> str:
 
 
 def _pre_text(value: str) -> str:
-    pieces: List[str] = []
-    for char in value:
-        if char == " ":
-            pieces.append('<i class="space">.</i>')
-        elif char == "\n":
-            pieces.append("<br />")
-        else:
-            pieces.append(escape(char, quote=True))
-    return "".join(pieces)
+    """Serialise the text of a `pre` block, keeping its indentation.
+
+    minihtml collapses a *run* of plain spaces to one but leaves a run of
+    U+00A0 alone, which is how `tables.py` pads its columns and what ADR 0007
+    measured on ST 4200. Emitting one element per space instead -- a
+    background-coloured full stop -- also holds the width, but it costs
+    minihtml a layout box per space: 5774 of them in this repository's own
+    69 KB design document, which is most of the native CPU a repaint burns. A
+    no-break space is a character, so it costs none.
+
+    Only runs of two or more are rewritten. A single space between words does
+    not collapse, and leaving it plain keeps the line's break opportunities:
+    U+00A0 everywhere would stop a long code line wrapping at all, and minihtml
+    gives a `pre` block no horizontal scrollbar to make up for it.
+    """
+    return _RUN_OF_SPACES.sub(
+        lambda match: NBSP * len(match.group()), escape(value, quote=True)
+    ).replace("\n", "<br />")
 
 
 def _relative_action(request: RenderRequest, index: int) -> str:

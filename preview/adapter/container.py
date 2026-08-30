@@ -1,6 +1,6 @@
 import json
 import os.path
-from functools import partial
+import time
 from typing import Optional
 
 import sublime
@@ -28,6 +28,9 @@ from .theme import theme_snapshot
 # by polling. Only a change in the table budget triggers a re-render.
 VIEWPORT_POLL_MS = 500
 
+# How many of each timing to keep for `mdglance_copy_diagnostics`.
+TIMING_HISTORY = 20
+
 
 def _window(window_id: int):
     return next(
@@ -50,6 +53,12 @@ class Container:
         self.clock = None
         self.policy_revision = 0
         self.recent_stages = []
+        # Rolling windows of what each half of a repaint cost. `recent_renders`
+        # is Python -- parse, table rewrite, serialise -- on the render pool.
+        # `recent_paints` is what Sublime charged for the minihtml layout, and
+        # it is the only view of that cost there is from here.
+        self.recent_renders = []
+        self.recent_paints = []
         self._theme_callbacks = {}
 
     def build(self) -> None:
@@ -57,7 +66,7 @@ class Container:
             return
         self.clock = SublimeClock()
         self.executors = OwnedExecutors()
-        self.backend = PhantomViewBackend(self.handle_link)
+        self.backend = PhantomViewBackend(self.handle_link, self.record_paint)
         self.layout = LayoutOwner()
         self.settings = SettingsAdapter(self._settings_changed)
         cache = AssetCache()
@@ -81,7 +90,7 @@ class Container:
         self.scheduler = GenerationScheduler(
             self.manager.get,
             self.snapshot,
-            partial(render, resolver=self.resolver),
+            self.render,
             self.present,
             self.present_error,
             self.executors.render,
@@ -209,7 +218,55 @@ class Container:
 
     def record_stage(self, stage: str) -> None:
         self.recent_stages.append(stage)
-        del self.recent_stages[:-20]
+        del self.recent_stages[:-TIMING_HISTORY]
+
+    def render(self, request: RenderRequest):
+        """Render on the pool, timing the Python half of a repaint."""
+        started = time.perf_counter()
+        document = render(request, resolver=self.resolver)
+        self.recent_renders.append(
+            {
+                "source_bytes": len(request.markdown),
+                "html_bytes": len(document.body_html),
+                "ms": round((time.perf_counter() - started) * 1000.0, 1),
+            }
+        )
+        del self.recent_renders[:-TIMING_HISTORY]
+        return document
+
+    def record_paint(
+        self, handle, size: int, elapsed_ms: float, skipped: bool
+    ) -> None:
+        """Record what `PhantomSet.update` cost for one surface.
+
+        This is wall clock around the Sublime call, so it measures the layout
+        only to the extent Sublime does that work synchronously; if minihtml
+        defers any of it to the next paint, that part lands outside the timer
+        and the number here is a floor, not the whole cost.
+        """
+        self.recent_paints.append(
+            {
+                "role": self.backend.role_of(self._surface_view(handle)) or "unknown",
+                "html_bytes": size,
+                "ms": round(elapsed_ms, 1),
+                "skipped": skipped,
+            }
+        )
+        del self.recent_paints[:-TIMING_HISTORY]
+        if self.settings is not None and self.settings.get().debug_logging:
+            print(
+                "MarkdownGlance: paint {} bytes in {:.1f} ms{}".format(
+                    size, elapsed_ms, " (skipped, unchanged)" if skipped else ""
+                )
+            )
+
+    def _surface_view(self, handle):
+        window = _window(handle.window_id)
+        if window is None:
+            return None
+        return next(
+            (view for view in window.views() if view.id() == handle.id), None
+        )
 
     def observe_theme(self, view, session_id: str) -> None:
         key = "mdglance.theme.{}".format(session_id)

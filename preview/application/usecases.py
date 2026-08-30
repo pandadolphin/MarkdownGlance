@@ -285,6 +285,15 @@ class UseCases:
     def _present_toc(
         self, session: PreviewSession, active_slug: Optional[str] = None
     ) -> None:
+        """Repaint the table of contents. Deliberately does not reveal it.
+
+        `reveal` focuses the group, focuses the view and focuses the previous
+        group back, and each of those makes Sublime fire `on_activated`, which
+        re-reads the theme and repaints -- which lands here again. Every render
+        therefore span the window's focus around a loop of its own. The two
+        moments the tab genuinely has to be brought to the front, creation and
+        a mode switch, reveal it themselves.
+        """
         if session.toc_surface is None or session.last_document is None:
             return
         html = build_toc(
@@ -294,7 +303,6 @@ class UseCases:
             session.toc_surface,
             represent(html, session.theme, session.zoom, self.base_css, panel=True),
         )
-        self.backend.reveal(session.toc_surface)
         self._fit_toc(session)
 
     def present_error(
@@ -434,5 +442,11 @@ class UseCases:
             self.manager.for_source(window.id(), view.buffer_id()) if window else None
         )
         if session is not None:
-            session.theme = self.theme_provider(view)
+            theme = self.theme_provider(view)
+            if theme == session.theme:
+                # `on_activated` asks on every focus change, and the answer is
+                # almost always the same one. Repainting anyway costs a full
+                # minihtml layout of the whole document.
+                return
+            session.theme = theme
             self.represent(session)
