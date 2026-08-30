@@ -4,7 +4,7 @@ import os.path
 import unittest
 
 from MarkdownGlance.preview.application.render_pipeline import render
-from MarkdownGlance.preview.assets.mermaid import mermaid_image_url
+from MarkdownGlance.preview.assets.mermaid import background_hex, mermaid_image_url
 from MarkdownGlance.preview.domain.contracts import (
     AssetStatus,
     Failed,
@@ -30,7 +30,7 @@ class FakeResolver:
         return {key: self.result for key in keys}
 
 
-def request(markdown, zoom=1.0, settings=None, token="opaque-token"):
+def request(markdown, zoom=1.0, settings=None, token="opaque-token", theme=None):
     return RenderRequest(
         "session",
         7,
@@ -38,7 +38,7 @@ def request(markdown, zoom=1.0, settings=None, token="opaque-token"):
         BASE_PATH,
         zoom,
         settings or RenderSettings(),
-        ThemeSnapshot(),
+        theme or ThemeSnapshot(),
         token,
     )
 
@@ -125,6 +125,38 @@ Unicode: 中文 café 😀
         payload = json.loads(base64.urlsafe_b64decode(encoded))
         self.assertEqual(payload["code"], "flowchart LR\nA --> B\n")
         self.assertNotIn(payload["code"], key.safe_label)
+
+    def test_mermaid_theme_and_background_follow_the_colour_scheme(self):
+        markdown = "```mermaid\nflowchart LR\nA --> B\n```\n"
+        settings = RenderSettings(enable_mermaid=True)
+
+        def locator(theme):
+            parsed = parse(
+                request(markdown, settings=settings, theme=theme),
+                mermaid_url_builder=mermaid_image_url,
+            )
+            return parsed.asset_keys[0].locator
+
+        def diagram_theme(url):
+            encoded = url.split("/img/", 1)[1].split("?", 1)[0]
+            encoded += "=" * (-len(encoded) % 4)
+            return json.loads(base64.urlsafe_b64decode(encoded))["mermaid"]["theme"]
+
+        light = locator(ThemeSnapshot("#ffffff", "#222222", False))
+        dark = locator(ThemeSnapshot("#1e1e2eff", "#cdd6f4", True))
+        self.assertEqual(diagram_theme(light), "default")
+        self.assertEqual(diagram_theme(dark), "dark")
+        self.assertIn("bgColor=ffffff", light)
+        self.assertIn("bgColor=1e1e2e", dark)
+        # The theme is part of the locator, so switching scheme is a new asset.
+        self.assertNotEqual(light, dark)
+
+    def test_mermaid_background_falls_back_when_the_colour_is_unusable(self):
+        self.assertEqual(background_hex(ThemeSnapshot("#abc", is_dark=False)), "aabbcc")
+        self.assertEqual(background_hex(ThemeSnapshot("rgb(1,2,3)")), "ffffff")
+        self.assertEqual(
+            background_hex(ThemeSnapshot("rgb(1,2,3)", is_dark=True)), "1e1e1e"
+        )
 
     def test_ready_image_uses_intrinsic_rem_size_without_viewport(self):
         parsed = parse(request("![alt](image.png)"))

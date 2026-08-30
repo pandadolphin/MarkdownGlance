@@ -31,6 +31,15 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **A Mermaid diagram now follows the editor's colour scheme.** The request
+  asked mermaid.ink for the light theme on a transparent background, so on a
+  dark scheme every label drawn straight onto that background — sequence
+  messages, loop and note text — was near-black on near-black while the filled
+  actor boxes stayed readable. The request now carries the Mermaid `dark` theme
+  and the preview's own background colour when the scheme is dark. The colour
+  is part of the diagram URL, so switching scheme fetches a new image rather
+  than reusing the cached one.
+
 - The table of contents and the outline no longer carry the preview's page
   margins. They are lists in a narrow group, so they get 0.8rem of padding
   rather than the document's 1.5rem, and the table of contents loses the margin

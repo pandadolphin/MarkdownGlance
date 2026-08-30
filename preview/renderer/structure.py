@@ -4,12 +4,22 @@ from html.parser import HTMLParser
 from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 from urllib.parse import unquote, urlsplit, urlunsplit
 
-from ..domain.contracts import AssetKey, AssetKind, Heading, RenderRequest
+from ..domain.contracts import (
+    AssetKey,
+    AssetKind,
+    Heading,
+    RenderRequest,
+    ThemeSnapshot,
+)
 from ..domain.paths import HOST
 from .markdown_engine import DEFAULT_ENGINE, MarkdownEngine
 from .model import ElementNode, Node, StructuredDoc, TextNode
 from .stylesheet import root_font_px
 from .tables import budgets, replace_tables
+
+# The theme reaches the builder because a mermaid.ink diagram is baked at
+# request time: it cannot adapt to the preview background the way CSS does.
+MermaidUrlBuilder = Callable[[str, str, ThemeSnapshot], str]
 
 VOID_TAGS = frozenset(("br", "hr", "img"))
 HEADING_TAGS = frozenset(("h1", "h2", "h3", "h4", "h5", "h6"))
@@ -131,7 +141,7 @@ def _asset_key(source: str, request: RenderRequest) -> Optional[AssetKey]:
 def _replace_mermaid(
     nodes: List[Node],
     request: RenderRequest,
-    mermaid_url_builder: Optional[Callable[[str, str], str]],
+    mermaid_url_builder: Optional[MermaidUrlBuilder],
 ) -> None:
     for index, node in enumerate(list(nodes)):
         if not isinstance(node, ElementNode):
@@ -151,7 +161,9 @@ def _replace_mermaid(
                 and mermaid_url_builder is not None
             ):
                 url = mermaid_url_builder(
-                    _raw_text(code), request.settings.mermaid_server
+                    _raw_text(code),
+                    request.settings.mermaid_server,
+                    request.theme,
                 )
                 key = AssetKey(AssetKind.MERMAID, url)
                 nodes[index] = ElementNode(
@@ -175,7 +187,7 @@ def _replace_mermaid(
 def parse(
     request: RenderRequest,
     engine: MarkdownEngine = DEFAULT_ENGINE,
-    mermaid_url_builder: Optional[Callable[[str, str], str]] = None,
+    mermaid_url_builder: Optional[MermaidUrlBuilder] = None,
 ) -> StructuredDoc:
     parser = _TreeParser()
     parser.feed(engine.convert(request.markdown))

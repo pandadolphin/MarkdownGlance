@@ -24,6 +24,9 @@ forward-compatibility testing.
    HTTPS, redirect, timeout, invalid and oversized remote images.
 7. Check Mermaid disabled, enabled disclosure, offline, timeout, invalid source
    and custom HTTPS server. Confirm diagnostics contain no source or locator.
+   Render a `sequenceDiagram` under a dark and a light colour scheme: message
+   and note labels must stay legible, and the image background must match the
+   preview's, in both.
 8. Close TOC, preview, source, group and window; reload the plugin. Change the
    layout after preview creation and confirm it is not overwritten on close.
 9. Outline: open with `Ctrl+Shift+B` on a file with no preview, and again with

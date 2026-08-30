@@ -147,8 +147,9 @@ caps that on a very wide screen. See
 
 Remote images are fetched off the UI thread with scheme, redirect, timeout,
 payload and dimension limits, and are cached only in memory. Mermaid is
-disabled by default; enabling it sends diagram source to the configured Mermaid
-server. Diagnostics redact source text, paths, URLs and Mermaid payloads.
+disabled by default; enabling it sends diagram source, and the preview's
+background colour, to the configured Mermaid server. Diagnostics redact source
+text, paths, URLs and Mermaid payloads.
 
 ## Documentation
 
