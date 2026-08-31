@@ -42,20 +42,21 @@ Linux, macOS and Windows.
 
 ### Package Control
 
-Open the Command Palette, run **Package Control: Install Package**, and choose
-**MarkdownGlance**.
+MarkdownGlance has been submitted to Package Control, but the
+[submission is still pending](https://github.com/sublimehq/package_control_channel/pull/9539)
+and the package is not yet available from the official channel.
 
-### Manually
+### Manual installation
 
-Open **Preferences → Browse Packages…** in Sublime Text and clone this
-repository into the directory it opens, under the name `MarkdownGlance`:
+For now, open **Preferences → Browse Packages…** in Sublime Text and clone
+this repository into the directory it opens, under the name `MarkdownGlance`:
 
 ```bash
 git clone https://github.com/pandadolphin/MarkdownGlance.git MarkdownGlance
 ```
 
-Either way, open a Markdown file and run **MarkdownGlance: Open Preview to the
-Side** from the Command Palette.
+Then open a Markdown file and run **MarkdownGlance: Open Preview to the Side**
+from the Command Palette.
 
 ## Commands
 
