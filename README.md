@@ -58,6 +58,27 @@ git clone https://github.com/pandadolphin/MarkdownGlance.git MarkdownGlance
 Then open a Markdown file and run **MarkdownGlance: Open Preview to the Side**
 from the Command Palette.
 
+#### If you do not use Git
+
+You can install it by hand instead. No command line is needed.
+
+1. Go to the [latest release](https://github.com/pandadolphin/MarkdownGlance/releases/latest).
+2. Under **Assets**, click **Source code (zip)** to download the ZIP file.
+3. Unzip it. You get a folder with a version number in its name, like
+   `MarkdownGlance-0.3.0`.
+4. Rename that folder to `MarkdownGlance`. The name must be exactly this, or
+   Sublime Text will not load the package.
+5. In Sublime Text, open **Preferences → Browse Packages…**. A file manager
+   window opens.
+6. Move the `MarkdownGlance` folder into that window.
+7. Restart Sublime Text.
+
+Now open a Markdown file and run **MarkdownGlance: Open Preview to the Side**
+from the Command Palette.
+
+To update later, delete the old `MarkdownGlance` folder and repeat these steps
+with the new release.
+
 ## Commands
 
 | Command | Shortcut |
