@@ -6,6 +6,26 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-02
+
+### Changed
+
+- Documentation only; no code, settings or key bindings change, and rendering
+  is byte-for-byte what 0.3.0 produced. **Manual installation now has a route
+  that does not need Git**: download the source ZIP from the latest release,
+  rename the unzipped folder to `MarkdownGlance`, and move it into the
+  directory **Preferences → Browse Packages…** opens. The Installation section
+  also says plainly that the Package Control
+  [submission is still pending](https://github.com/sublimehq/package_control_channel/pull/9539),
+  and the README's preview screenshot is a light and dark pair, so it follows
+  the colour scheme of whoever is reading it.
+
+- [ADR 0002](docs/adr/0002-product-and-package-name.md) gains an addendum
+  recording why `MarkdownPreviewPlus` and `MarkdownPreviewExtended` were
+  considered and rejected, and that the name is frozen once the Package Control
+  channel pull request is merged. `docs/` is `export-ignore`'d, so this reaches
+  the repository only.
+
 ## [0.3.0] - 2026-08-30
 
 ### Added
@@ -223,7 +243,8 @@ First public release.
 - `MarkdownGlance: Copy Diagnostics`, which redacts source text, paths, URLs
   and Mermaid payloads.
 
-[Unreleased]: https://github.com/pandadolphin/MarkdownGlance/compare/0.3.0...HEAD
+[Unreleased]: https://github.com/pandadolphin/MarkdownGlance/compare/0.3.1...HEAD
+[0.3.1]: https://github.com/pandadolphin/MarkdownGlance/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/pandadolphin/MarkdownGlance/compare/0.2.1...0.3.0
 [0.2.1]: https://github.com/pandadolphin/MarkdownGlance/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/pandadolphin/MarkdownGlance/compare/0.1.4...0.2.0
