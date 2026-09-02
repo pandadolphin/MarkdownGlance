@@ -211,6 +211,15 @@ Mathieu Paturel — thank you for showing that a same-window Markdown preview
 belongs in Sublime Text. MarkdownGlance is an independent implementation for
 Sublime Text 4; the code here is its own.
 
+## My Markdown workflow
+
+I also use [Auto Save After Delay](https://github.com/pandadolphin/sublime-auto-save-after-delay)
+alongside MarkdownGlance. It saves Markdown and other writing files after I
+stop typing for a configurable delay, bringing the focused `afterDelay`
+behaviour from VS Code and Zed to Sublime Text. MarkdownGlance keeps the
+rendered result in view; Auto Save After Delay makes sure the source reaches
+disk when I pause.
+
 ## License
 
 MIT. See [LICENSE](LICENSE). Vendored dependency attribution is recorded in
